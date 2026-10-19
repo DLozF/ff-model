@@ -1,0 +1,187 @@
+import json
+import time
+from pathlib import Path
+
+import numpy as np
+import polars as pl
+
+from ffm.config import load_config
+from ffm.distributions import QuantileModel
+from ffm.ids import normalize_team
+from ffm.league import synthetic_draft
+from ffm.season import simulate_season
+from ffm.worlds import generate_worlds, weighted_recent_projection
+
+ROOT = Path("/opt/data/ff-model")
+CACHE = ROOT / "data/cache"
+VALID_POSITIONS = {"QB", "RB", "WR", "TE", "K", "DEF"}
+
+
+def completed_weeks(schedules, season):
+    """Return completed regular-season weeks."""
+    regular = schedules.filter((pl.col("season") == season) & (pl.col("game_type") == "REG"))
+    grouped = regular.group_by("week").agg(
+        (pl.col("home_score").is_not_null().all() & pl.col("away_score").is_not_null().all()).alias("complete")
+    )
+    return sorted(grouped.filter("complete").get_column("week").to_list())
+
+
+def load_projection_history(season):
+    """Load compact cached projections for one season."""
+    frames = []
+    for path in sorted(CACHE.glob(f"sleeper_projections_{season}_w*.parquet")):
+        frame = pl.read_parquet(path)
+        frames.append(frame.select(
+            "season", "week", "player_id", "name", "position", "team", "opponent", "pts_ppr"
+        ))
+    return pl.concat(frames, how="diagonal_relaxed").filter(
+        pl.col("position").is_in(VALID_POSITIONS)
+    )
+
+
+def prepare_players(history, weeks, sleeper_players):
+    """Select players and build future projection matrix."""
+    future = history.filter(pl.col("week").is_in(weeks)).with_columns(
+        pl.col("pts_ppr").fill_null(0)
+    )
+    ros = future.group_by("player_id").agg(
+        pl.col("pts_ppr").sum().alias("ros_points"),
+        pl.col("name").drop_nulls().last(), pl.col("position").drop_nulls().last(),
+        pl.col("team").drop_nulls().last(),
+    ).filter(pl.col("team").is_not_null())
+    top = set(ros.sort("ros_points", descending=True).head(450).get_column("player_id").to_list())
+    extras = set(ros.filter(pl.col("position") == "QB").get_column("player_id").to_list())
+    for position in ("K", "DEF"):
+        extras.update(
+            ros.filter(pl.col("position") == position).sort("ros_points", descending=True).head(32).get_column("player_id").to_list()
+        )
+    selected = ros.filter(pl.col("player_id").is_in(top | extras)).sort("ros_points", descending=True)
+    metadata = sleeper_players.select("player_id", "injury_status")
+    players = selected.join(metadata, on="player_id", how="left").with_row_index("player_index")
+    lookup = {
+        (row["player_id"], row["week"]): float(row["pts_ppr"] or 0)
+        for row in history.iter_rows(named=True)
+    }
+    matrix = np.zeros((len(weeks), players.height), dtype=np.float32)
+    for player_index, row in enumerate(players.iter_rows(named=True)):
+        player_history = {
+            week: points for (player, week), points in lookup.items() if player == row["player_id"]
+        }
+        for week_index, week in enumerate(weeks):
+            value = player_history.get(week)
+            if value is None:
+                recent = [player_history[past] for past in sorted(
+                    (past for past in player_history if past < week), reverse=True
+                )[:3]]
+                value = weighted_recent_projection(recent) if recent else 0.0
+            matrix[week_index, player_index] = value
+    return players, matrix
+
+
+def schedule_inputs(schedules, weeks, players):
+    """Build player bye masks and NFL game pairs."""
+    bye = np.ones((len(weeks), players.height), dtype=bool)
+    games = []
+    teams = players.get_column("team").to_numpy()
+    regular = schedules.filter((pl.col("season") == 2026) & (pl.col("game_type") == "REG"))
+    for week_index, week in enumerate(weeks):
+        rows = regular.filter(pl.col("week") == week)
+        pairs = [
+            (normalize_team(row["home_team"]), normalize_team(row["away_team"]))
+            for row in rows.iter_rows(named=True)
+        ]
+        active = {team for pair in pairs for team in pair}
+        bye[week_index] = np.array([team not in active for team in teams])
+        games.append(pairs)
+    return bye, games
+
+
+def write_report(league, result, runtime, reproducible, teams):
+    """Write synthetic league odds."""
+    lines = [
+        "# Synthetic league odds", "",
+        f"- n_final worlds + season runtime: {runtime:.3f} seconds",
+        f"- Same-seed reproducibility check: {'passed' if reproducible else 'failed'}", "",
+        "| Team | P(playoffs) | P(bye) | P(champion) | Expected wins | Expected points |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for index, team in enumerate(teams):
+        lines.append(
+            f"| {team} | {result['playoff_probability'][index]:.4f} | "
+            f"{result['bye_probability'][index]:.4f} | {result['champion_probability'][index]:.4f} | "
+            f"{result['expected_wins'][index]:.3f} | {result['expected_points_for'][index]:.2f} |"
+        )
+    (ROOT / "reports/league_odds.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def main():
+    config = load_config()
+    schedules = pl.read_parquet(CACHE / "nflverse_schedules.parquet")
+    completed = completed_weeks(schedules, 2026)
+    first_week = max(completed) + 1
+    weeks = list(range(first_week, config["league"]["playoff_weeks"][-1] + 1))
+    history = load_projection_history(2026)
+    sleeper_players = pl.read_parquet(CACHE / "sleeper_players.parquet")
+    players, projections = prepare_players(history, weeks, sleeper_players)
+    bye, games = schedule_inputs(schedules, weeks, players)
+    positions = players.get_column("position").to_numpy()
+    teams = players.get_column("team").to_numpy()
+    statuses = players.get_column("injury_status").to_numpy()
+    statuses = np.array([status or "none" for status in statuses])
+    model = QuantileModel.load(ROOT / "models/quantiles_2026.npz")
+    availability = json.loads((ROOT / "models/availability.json").read_text())
+    qb_effect = json.loads((ROOT / "models/qb_effect.json").read_text())
+    sigma = np.load(ROOT / "models/copula.npz")["Sigma"]
+
+    draft_players = players.select(
+        pl.col("player_id").alias("sleeper_id"), "name",
+        pl.col("position").alias("pos"), "ros_points",
+    )
+    league = synthetic_draft(draft_players, teams=config["league"]["teams"], roster_size=15)
+    league["player_ids"] = players.get_column("player_id").to_list()
+    (ROOT / "models/synthetic_league.json").write_text(json.dumps(league, indent=2), encoding="utf-8")
+
+    small_a = generate_worlds(
+        projections, bye, positions, teams, statuses, games, model, availability,
+        qb_effect, sigma, 50, config["sim"]["seed"],
+    )
+    small_b = generate_worlds(
+        projections, bye, positions, teams, statuses, games, model, availability,
+        qb_effect, sigma, 50, config["sim"]["seed"],
+    )
+    reproducible = all(np.array_equal(left, right) for left, right in zip(small_a, small_b))
+
+    started = time.perf_counter()
+    points, available, proj_seen = generate_worlds(
+        projections, bye, positions, teams, statuses, games, model, availability,
+        qb_effect, sigma, config["sim"]["n_final"], config["sim"]["seed"],
+    )
+    result = simulate_season(
+        points, proj_seen, available, positions, league["rosters"], weeks,
+        config["league"]["regular_season_weeks"][1], config["league"]["playoff_teams"],
+    )
+    runtime = time.perf_counter() - started
+    world_dir = Path(config["paths"]["worlds"]) / f"2026_w{first_week}"
+    world_dir.mkdir(parents=True, exist_ok=True)
+    np.save(world_dir / "points.npy", points)
+    np.save(world_dir / "available.npy", available)
+    np.save(world_dir / "proj_seen.npy", proj_seen)
+    np.save(world_dir / "week_numbers.npy", np.array(weeks))
+    players.write_parquet(world_dir / "player_index.parquet")
+    np.savez_compressed(
+        world_dir / "season_results.npz", playoff=result["playoff"], bye=result["bye"],
+        champion=result["champion"], champion_flags=result["champion_flags"],
+        wins=result["wins"], points_for=result["points_for"],
+        team_week_scores=result["team_week_scores"],
+    )
+    write_report(league, result, runtime, reproducible, league["teams"])
+    print(f"first incomplete week: {first_week}")
+    print(f"players: {players.height}; worlds: {config['sim']['n_final']}")
+    print(f"runtime_seconds: {runtime:.3f}")
+    print(f"reproducible: {reproducible}")
+    print(f"sum_playoff_probability: {result['playoff_probability'].sum():.12f}")
+    print(f"sum_champion_probability: {result['champion_probability'].sum():.12f}")
+
+
+if __name__ == "__main__":
+    main()
