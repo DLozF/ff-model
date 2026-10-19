@@ -13,7 +13,7 @@
 | P7 | done | Empty/clone zero; AJ Barner for Christian McCaffrey => ACCEPT |
 | P8 | done | 37,125 trades + 600 waivers in 845.893s; both reports saved |
 | P9 | blocked | Copula Brier wins overall/stacked; stacked worst decile error 6.51% |
-| P10 | not started | |
+| P10 | done | Fake Yahoo JSON test passes; live and CSV loaders documented |
 | P11 | not started | |
 
 ## Assumptions
@@ -23,6 +23,7 @@
 - P4 empirical miss/recovery and injury-status estimates failed sanity checks, so the documented position/status defaults were used.
 - Historical IR transitions were unavailable; r_IR=0.25. QB replacement sample was 0, so kappa=0.75 and beta defaults WR/TE=0.6, RB=0.3.
 - P8 used raw post-trade roster WELP as a fast pre-screen, then applied exact roster balancing and WELP before full confirmation.
+- Yahoo Fantasy API access currently requires manual approval before OAuth app use; setup documentation includes the approval step.
 
 ## Blocked
 - P3 calibration gate: K=500/smoothing=9 retry still failed. Largest 2026 misses include TE 50% coverage=0.315, K 95%=0.841; DEF 2023 CRPS 3.216 vs Normal 3.150. Full results: reports/calibration.md.
@@ -52,3 +53,5 @@
 - P8 checks: finder runtime 845.893s (<20 minutes); trade and waiver reports exist; 29 tests passed.
 - P9: reran with antithetic draws and separate selection/simulation RNG streams; report saved from 14,400 matchup pairs.
 - P9 check: Brier criteria passed; stacked calibration-bin gate failed; 30 tests passed.
+- P10: implemented yfpy OAuth loader, Yahoo-to-Sleeper IDs, DEF mapping, Parquet tables, config update, CSV alternative, and real-league loading.
+- P10 check: saved fake Yahoo JSON produced correct settings/rosters; full suite 32 passed. No Yahoo login attempted.

@@ -1,0 +1,38 @@
+{
+  "league": {"num_teams": 2, "current_week": 6, "start_week": 1, "end_week": 17},
+  "settings": {
+    "num_playoff_teams": 1,
+    "playoff_start_week": 15,
+    "roster_positions": [
+      {"position": "QB", "count": 1, "is_starting_position": 1},
+      {"position": "RB", "count": 2, "is_starting_position": 1},
+      {"position": "W/R/T", "count": 1, "is_starting_position": 1},
+      {"position": "BN", "count": 4, "is_starting_position": 0}
+    ],
+    "stat_categories": [
+      {"stat_id": 4, "name": "Passing Yards"},
+      {"stat_id": 8, "name": "Passing Touchdowns"}
+    ],
+    "stat_modifiers": [
+      {"stat_id": 4, "value": 0.04},
+      {"stat_id": 8, "value": 4.0}
+    ]
+  },
+  "teams": [
+    {"team_id": 1, "name": "Diego", "roster": [
+      {"player_id": 101, "name": {"full": "Quarter Back"}, "primary_position": "QB", "editorial_team_abbr": "SEA"},
+      {"player_id": 102, "name": {"full": "Seattle Defense"}, "primary_position": "DEF", "editorial_team_abbr": "SEA"}
+    ]},
+    {"team_id": 2, "name": "Other", "roster": [
+      {"player_id": 103, "name": {"full": "Running Back"}, "primary_position": "RB", "editorial_team_abbr": "LA"}
+    ]}
+  ],
+  "free_agents": [
+    {"player_id": 104, "name": {"full": "Free Receiver"}, "primary_position": "WR", "editorial_team_abbr": "SF"}
+  ],
+  "standings": [
+    {"team_id": 1, "wins": 4, "losses": 1, "ties": 0, "points_for": 500.5, "rank": 1},
+    {"team_id": 2, "wins": 2, "losses": 3, "ties": 0, "points_for": 450.0, "rank": 2}
+  ],
+  "schedule": [{"week": 6, "team1_id": 1, "team2_id": 2}]
+}

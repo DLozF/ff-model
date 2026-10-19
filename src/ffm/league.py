@@ -1,5 +1,6 @@
 import numpy as np
 import polars as pl
+from pathlib import Path
 
 REPLACEMENT_RANK = {"QB": 12, "RB": 28, "WR": 28, "TE": 16, "K": 12, "DEF": 12}
 BASE_NEEDS = {"QB": 1, "RB": 2, "WR": 2, "TE": 1, "K": 1, "DEF": 1}
@@ -69,4 +70,33 @@ def synthetic_draft(players: pl.DataFrame, teams: int = 12, roster_size: int = 1
         "rosters": rosters,
         "free_agents": np.flatnonzero(available).tolist(),
         "vor": values.tolist(),
+    }
+
+
+def load_real_league(cache: str | Path, player_index: pl.DataFrame) -> dict:
+    """Load normalized Yahoo rosters and current standings."""
+    cache = Path(cache)
+    teams = pl.read_parquet(cache / "yahoo_teams.parquet").sort("team_id")
+    rosters = pl.read_parquet(cache / "yahoo_rosters.parquet")
+    free_agents = pl.read_parquet(cache / "yahoo_free_agents.parquet")
+    standings = pl.read_parquet(cache / "yahoo_standings.parquet")
+    mapping = {
+        str(row["sleeper_id"]): int(row["player_index"])
+        for row in player_index.select("sleeper_id", "player_index").drop_nulls().iter_rows(named=True)
+    }
+    roster_lists = []
+    for team_id in teams.get_column("team_id"):
+        roster_lists.append([
+            mapping[str(sleeper_id)]
+            for sleeper_id in rosters.filter(pl.col("team_id") == team_id).get_column("sleeper_id")
+            if sleeper_id is not None and str(sleeper_id) in mapping
+        ])
+    return {
+        "teams": teams.get_column("team_name").to_list(),
+        "rosters": roster_lists,
+        "free_agents": [
+            mapping[str(sleeper_id)] for sleeper_id in free_agents.get_column("sleeper_id")
+            if sleeper_id is not None and str(sleeper_id) in mapping
+        ],
+        "standings": standings.sort("team_id").to_dicts(),
     }
