@@ -1,0 +1,154 @@
+import argparse
+import json
+import re
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import numpy as np
+import polars as pl
+
+from ffm.config import load_config
+from ffm.lineup import greedy
+from ffm.trade import (
+    apply_trade, evaluate_rosters, fuzzy_match, metric_delta, roster_lineup_points,
+    trade_verdict,
+)
+
+ROOT = Path("/opt/data/ff-model")
+
+
+def parse_names(value):
+    """Parse a comma-separated player list."""
+    return [name.strip() for name in value.split(",") if name.strip()]
+
+
+def exposure(points, projections, available, positions, nfl_teams, roster):
+    """Measure lineup point shares by NFL team."""
+    indices = np.asarray(roster)
+    totals = {}
+    grand = 0.0
+    for week in range(points.shape[0]):
+        selected = greedy(
+            projections[week][:, indices], positions[indices], available[week][:, indices]
+        )
+        contributions = points[week][:, indices] * selected
+        for team in sorted(set(nfl_teams[indices])):
+            mask = nfl_teams[indices] == team
+            value = float(contributions[:, mask].sum(axis=1).mean())
+            totals[team] = totals.get(team, 0.0) + value
+            grand += value
+    return {team: value / grand for team, value in totals.items()} if grand else {}
+
+
+def summarize(before, after, team):
+    """Build paired metric summaries for one fantasy team."""
+    return {
+        "playoffs": metric_delta(before["playoff"][:, team], after["playoff"][:, team]),
+        "champion": metric_delta(before["champion_flags"][:, team], after["champion_flags"][:, team]),
+        "wins": metric_delta(before["wins"][:, team], after["wins"][:, team]),
+        "missed_playoffs": metric_delta(~before["playoff"][:, team], ~after["playoff"][:, team]),
+    }
+
+
+def interval_text(value):
+    return f"{value['mean']:+.4f} [{value['low']:+.4f}, {value['high']:+.4f}]"
+
+
+def write_report(
+    path, league, names, weeks, before, after, summaries, my_team, other_team,
+    verdict, acceptance, adjustments, exposure_before, exposure_after,
+):
+    """Write a trade decision report."""
+    lines = [
+        f"# Trade evaluation: {league['teams'][other_team]}", "",
+        f"- Verdict for {league['teams'][my_team]}: **{verdict}**",
+        f"- Other-team acceptance: **{acceptance}**", "",
+    ]
+    for team in (my_team, other_team):
+        lines.extend([
+            f"## {league['teams'][team]}", "",
+            "| Metric | Delta | 90% interval |", "|---|---:|---:|",
+        ])
+        for metric, value in summaries[team].items():
+            lines.append(f"| {metric} | {value['mean']:+.4f} | [{value['low']:+.4f}, {value['high']:+.4f}] |")
+        dropped = ", ".join(names[player] for player in adjustments[team]["dropped"]) or "none"
+        added = ", ".join(names[player] for player in adjustments[team]["added"]) or "none"
+        lines.extend(["", f"Roster balancing: dropped {dropped}; added {added}.", ""])
+    lines.extend([
+        "## Starting lineup points", "",
+        "| Week | Team | Before | After | Delta |", "|---:|---|---:|---:|---:|",
+    ])
+    for week_index, week in enumerate(weeks):
+        section = "regular" if week <= 14 else "playoff"
+        for team in (my_team, other_team):
+            old = float(before["team_week_scores"][week_index, :, team].mean())
+            new = float(after["team_week_scores"][week_index, :, team].mean())
+            lines.append(f"| {week} ({section}) | {league['teams'][team]} | {old:.2f} | {new:.2f} | {new-old:+.2f} |")
+    lines.extend(["", "## QB exposure: Team 1 lineup point share by NFL team", "", "| NFL team | Before | After |", "|---|---:|---:|"])
+    for team in sorted(set(exposure_before) | set(exposure_after)):
+        lines.append(f"| {team} | {exposure_before.get(team, 0):.3f} | {exposure_after.get(team, 0):.3f} |")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--team", required=True)
+    parser.add_argument("--give", default="")
+    parser.add_argument("--get", default="")
+    args = parser.parse_args()
+    config = load_config()
+    world_dir = Path(config["paths"]["worlds"]) / "2026_w6"
+    points = np.load(world_dir / "points.npy", mmap_mode="r")
+    available = np.load(world_dir / "available.npy", mmap_mode="r")
+    projections = np.load(world_dir / "proj_seen.npy", mmap_mode="r")
+    weeks = np.load(world_dir / "week_numbers.npy").tolist()
+    players = pl.read_parquet(world_dir / "player_index.parquet")
+    league = json.loads((ROOT / "models/synthetic_league.json").read_text())
+    names = players.get_column("name").fill_null(players.get_column("player_id")).to_list()
+    positions = players.get_column("position").to_numpy()
+    nfl_teams = players.get_column("team").to_numpy()
+    ros_points = players.get_column("ros_points").to_numpy()
+    my_team = league["teams"].index(config["league"]["my_team"])
+    other_team = league["teams"].index(args.team)
+    give = [fuzzy_match(name, names) for name in parse_names(args.give)]
+    get = [fuzzy_match(name, names) for name in parse_names(args.get)]
+    if any(player not in league["rosters"][my_team] for player in give):
+        raise ValueError("a give player is not on Team 1")
+    if any(player not in league["rosters"][other_team] for player in get):
+        raise ValueError(f"a get player is not on {args.team}")
+    print("Matched give:", [names[player] for player in give])
+    print("Matched get:", [names[player] for player in get])
+    updated, adjustments = apply_trade(
+        league["rosters"], league["free_agents"], my_team, other_team, give, get,
+        points, projections, available, positions, ros_points, config["sim"]["n_dev"],
+    )
+    before = evaluate_rosters(
+        points, projections, available, positions, league["rosters"], weeks, 14, 6
+    )
+    after = evaluate_rosters(points, projections, available, positions, updated, weeks, 14, 6)
+    summaries = {
+        my_team: summarize(before, after, my_team),
+        other_team: summarize(before, after, other_team),
+    }
+    criterion = "champion" if before["playoff"][:, my_team].mean() > 0.9 else "playoffs"
+    verdict = trade_verdict(summaries[my_team][criterion])
+    other_delta = summaries[other_team]["playoffs"]["mean"]
+    acceptance = "LIKELY" if other_delta > 0 else "POSSIBLE" if other_delta > -0.01 else "UNLIKELY"
+    before_exposure = exposure(
+        points, projections, available, positions, nfl_teams, league["rosters"][my_team]
+    )
+    after_exposure = exposure(points, projections, available, positions, nfl_teams, updated[my_team])
+    date = datetime.now(ZoneInfo("America/Chicago")).date().isoformat()
+    slug = re.sub(r"[^a-z0-9]+", "_", f"{args.team}_{'_'.join(args.give.split(','))}_{'_'.join(args.get.split(','))}".lower()).strip("_") or "empty"
+    path = ROOT / "reports" / f"trade_{date}_{slug}.md"
+    write_report(
+        path, league, names, weeks, before, after, summaries, my_team, other_team,
+        verdict, acceptance, adjustments, before_exposure, after_exposure,
+    )
+    print(f"Verdict: {verdict}; acceptance: {acceptance}")
+    print(f"Report: {path}")
+
+
+if __name__ == "__main__":
+    main()

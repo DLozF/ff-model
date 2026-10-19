@@ -10,7 +10,7 @@
 | P4 | done | Availability sanity checks pass with declared defaults; QB effect defaults used |
 | P5 | done | QB1-WR1 r=0.3137; held-out stack variance ratio=1.1415 |
 | P6 | done | 5,000 worlds + season in 19.450s; playoff/champion sums exact |
-| P7 | not started | |
+| P7 | done | Empty/clone zero; AJ Barner for Christian McCaffrey => ACCEPT |
 | P8 | not started | |
 | P9 | not started | |
 | P10 | not started | |
@@ -44,3 +44,5 @@
 - P5 checks: held-out 2025 stack variance ratio 1.141456 vs independent 1.544908; 21 tests passed.
 - P6: generated 12 weeks x 5,000 worlds x 532 players under /tmp/ff-worlds/2026_w6.
 - P6 checks: P(playoffs) sum=6.000000000000, P(champion) sum=1.000000000000, same-seed check passed, runtime 19.450s; 24 tests passed.
+- P7: empty trade produced exact zero deltas; identical-world clone test produced NO CLEAR EFFECT.
+- P7: lopsided Team 1 AJ Barner for Team 5 Christian McCaffrey produced ACCEPT; sample report saved; 27 tests passed.
