@@ -8,7 +8,7 @@
 | P2 | done | Greedy matched integer program on 1,000 random rosters |
 | P3 | blocked | Model/report saved; strict per-season coverage/CRPS gate failed after required retry |
 | P4 | done | Availability sanity checks pass with declared defaults; QB effect defaults used |
-| P5 | not started | |
+| P5 | done | QB1-WR1 r=0.3137; held-out stack variance ratio=1.1415 |
 | P6 | not started | |
 | P7 | not started | |
 | P8 | not started | |
@@ -40,3 +40,5 @@
 - P3 full suite: 16 passed in 7.99s.
 - P4: saved availability.json and qb_effect.json with raw estimates, defaults, and sample sizes.
 - P4 checks: all h/r and Out/Questionable sanity assertions passed after specified default replacement; 19 tests passed.
+- P5: saved positive-definite 18D copula; minimum eigenvalue 0.403056 and QB1-WR1 correlation 0.313696.
+- P5 checks: held-out 2025 stack variance ratio 1.141456 vs independent 1.544908; 21 tests passed.
