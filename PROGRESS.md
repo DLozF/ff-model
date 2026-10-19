@@ -12,7 +12,7 @@
 | P6 | done | 5,000 worlds + season in 19.450s; playoff/champion sums exact |
 | P7 | done | Empty/clone zero; AJ Barner for Christian McCaffrey => ACCEPT |
 | P8 | done | 37,125 trades + 600 waivers in 845.893s; both reports saved |
-| P9 | not started | |
+| P9 | blocked | Copula Brier wins overall/stacked; stacked worst decile error 6.51% |
 | P10 | not started | |
 | P11 | not started | |
 
@@ -26,6 +26,7 @@
 
 ## Blocked
 - P3 calibration gate: K=500/smoothing=9 retry still failed. Largest 2026 misses include TE 50% coverage=0.315, K 95%=0.841; DEF 2023 CRPS 3.216 vs Normal 3.150. Full results: reports/calibration.md.
+- P9 calibration gate: copula Brier beat independent overall (0.219201 vs 0.219208) and stacked (0.217772 vs 0.217796), but stacked worst equal-count bin error was 0.065119 (>0.05). Overall worst bin was 0.025570.
 
 ## Log
 - P0: initialized project structure and git repository.
@@ -49,3 +50,5 @@
 - P7: lopsided Team 1 AJ Barner for Team 5 Christian McCaffrey produced ACCEPT; sample report saved; 27 tests passed.
 - P8: screened all 37,125 requested trade shapes and 600 waiver pairs; 469 trades passed WELP and top 30 were confirmed.
 - P8 checks: finder runtime 845.893s (<20 minutes); trade and waiver reports exist; 29 tests passed.
+- P9: reran with antithetic draws and separate selection/simulation RNG streams; report saved from 14,400 matchup pairs.
+- P9 check: Brier criteria passed; stacked calibration-bin gate failed; 30 tests passed.
