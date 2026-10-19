@@ -81,7 +81,10 @@ def build_player_weeks(
             "opp": normalize_team(projection.get("opponent")),
             "proj_pts": proj_pts,
             "act_pts": act_pts,
-            "played": actual is not None or key in snap_keys,
+            "played": (
+                actual is not None
+                and (float(actual.get("gp") or 0) > 0 or act_pts != 0)
+            ) or key in snap_keys,
         })
     return pl.from_dicts(records, schema={
         "season": pl.Int64, "week": pl.Int64, "sleeper_id": pl.String,

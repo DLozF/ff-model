@@ -29,3 +29,23 @@ def test_build_player_weeks_joins_and_filters():
         "name": "One", "pos": "WR", "team": "LAR", "opp": "SF",
         "proj_pts": 10.0, "act_pts": 16.0, "played": True,
     }
+
+
+def test_zero_stat_placeholder_is_not_marked_played():
+    projections = pl.DataFrame({
+        "season": [2025], "week": [1], "player_id": ["2"], "name": ["Two"],
+        "position": ["RB"], "team": ["SEA"], "opponent": ["ARI"], "pts_ppr": [5.0],
+    })
+    stats = pl.DataFrame({
+        "season": [2025], "week": [1], "player_id": ["2"], "pts_ppr": [0.0], "gp": [0.0],
+    })
+    players = pl.DataFrame({
+        "player_id": ["2"], "gsis_id": ["g2"], "full_name": ["Two"],
+        "position": ["RB"], "team": ["SEA"],
+    })
+
+    result = build_player_weeks(
+        projections, stats, players, pl.DataFrame(), pl.DataFrame(), load_config()["scoring"]
+    )
+
+    assert result.get_column("played").to_list() == [False]
