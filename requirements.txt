@@ -1,0 +1,13 @@
+nflreadpy
+polars
+pyarrow
+pandas
+numpy
+scipy
+scikit-learn
+pulp
+pyyaml
+requests
+python-dotenv
+yfpy
+pytest

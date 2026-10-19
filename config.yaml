@@ -1,0 +1,47 @@
+league:
+  teams: 12
+  my_team: "Team 1"
+  lineup: {QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DEF: 1}
+  flex_eligible: [RB, WR, TE]
+  bench: 6
+  regular_season_weeks: [1, 14]
+  playoff_teams: 6
+  playoff_weeks: [15, 16, 17]
+  tiebreaker: points_for
+scoring:
+  pass_yd: 0.04
+  pass_td: 4
+  pass_int: -1
+  pass_2pt: 2
+  rush_yd: 0.1
+  rush_td: 6
+  rush_2pt: 2
+  rec: 1.0
+  rec_yd: 0.1
+  rec_td: 6
+  rec_2pt: 2
+  fum_lost: -2
+  ret_td: 6
+  xpm: 1
+  fgm_0_19: 3
+  fgm_20_29: 3
+  fgm_30_39: 3
+  fgm_40_49: 4
+  fgm_50p: 5
+  def_sack: 1
+  def_int: 2
+  def_fum_rec: 2
+  def_td: 6
+  def_safety: 2
+  def_blk_kick: 2
+  def_pts_allowed: {"0": 10, "1-6": 7, "7-13": 4, "14-20": 1, "21-27": 0, "28-34": -1, "35+": -4}
+sim:
+  seed: 2026
+  n_dev: 1000
+  n_final: 5000
+  training_seasons: [2021, 2022, 2023, 2024, 2025]
+  current_season: 2026
+paths:
+  root: /opt/data/ff-model
+  venv: /tmp/ff-venv
+  worlds: /tmp/ff-worlds
