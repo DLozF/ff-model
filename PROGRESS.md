@@ -14,7 +14,7 @@
 | P8 | done | 37,125 trades + 600 waivers in 845.893s; both reports saved |
 | P9 | blocked | Copula Brier wins overall/stacked; stacked worst decile error 6.51% |
 | P10 | done | Fake Yahoo JSON test passes; live and CSV loaders documented |
-| P11 | not started | |
+| P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -57,3 +57,5 @@
 - P9 follow-up: stacked 6.51% error bin contains 360 pairs, so it is not marked low sample; full suite 33 passed.
 - P10: implemented yfpy OAuth loader, Yahoo-to-Sleeper IDs, DEF mapping, Parquet tables, config update, CSV alternative, and real-league loading.
 - P10 check: saved fake Yahoo JSON produced correct settings/rosters; full suite 32 passed. No Yahoo login attempted.
+- P11: E1 improvements were 0.166%, 0.126%, -0.089%; E2 improvements were 0.009%, 0.001%, -0.005%.
+- P11 checks: neither experiment met the 1% in 2-of-3 rule, E3 was inapplicable, all experiment flags remain off; 35 tests passed.
