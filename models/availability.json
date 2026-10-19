@@ -1,0 +1,94 @@
+{
+  "markov": {
+    "QB": {
+      "h": 0.04,
+      "r": 0.6,
+      "h_n": 2207,
+      "r_n": 2,
+      "h_raw": 0.0009062075215224287,
+      "r_raw": 1.0
+    },
+    "RB": {
+      "h": 0.08,
+      "r": 0.6875,
+      "h_n": 3721,
+      "r_n": 16,
+      "h_raw": 0.0026874496103198066
+    },
+    "WR": {
+      "h": 0.07,
+      "r": 0.55,
+      "h_n": 5911,
+      "r_n": 7,
+      "h_raw": 0.0030451700219928947,
+      "r_raw": 1.0
+    },
+    "TE": {
+      "h": 0.07,
+      "r": 0.6666666666666666,
+      "h_n": 2168,
+      "r_n": 3,
+      "h_raw": 0.0032287822878228783
+    },
+    "K": {
+      "h": 0.03,
+      "r": 0.65,
+      "h_n": 2263,
+      "r_n": 1,
+      "h_raw": 0.0017675651789659744,
+      "r_raw": 1.0
+    },
+    "DEF": {
+      "h": 0.02,
+      "r": 0.8,
+      "h_n": 2396,
+      "r_n": 0,
+      "h_raw": 0.0,
+      "r_raw": null
+    }
+  },
+  "status_play_probability": {
+    "none": {
+      "probability": 0.992989165073295,
+      "n": 34518
+    },
+    "Questionable": {
+      "probability": 0.75,
+      "n": 1216,
+      "raw_probability": 0.9868421052631579
+    },
+    "Doubtful": {
+      "probability": 0.0,
+      "n": 1
+    },
+    "Out": {
+      "probability": 0.02,
+      "n": 4,
+      "raw_probability": 0.75
+    },
+    "Note": {
+      "probability": 1.0,
+      "n": 2
+    }
+  },
+  "r_ir": {
+    "value": 0.25,
+    "sample_size": 0,
+    "default_used": true
+  },
+  "assumptions": [
+    "QB h=0.0009062075215224287 replaced with 0.04",
+    "QB r=1.0 replaced with 0.6",
+    "RB h=0.0026874496103198066 replaced with 0.08",
+    "WR h=0.0030451700219928947 replaced with 0.07",
+    "WR r=1.0 replaced with 0.55",
+    "TE h=0.0032287822878228783 replaced with 0.07",
+    "K h=0.0017675651789659744 replaced with 0.03",
+    "K r=1.0 replaced with 0.65",
+    "DEF h=0.0 replaced with 0.02",
+    "DEF r=None replaced with 0.8",
+    "P(play|Out)=0.75 replaced with 0.02",
+    "P(play|Questionable)=0.9868421052631579 replaced with 0.75",
+    "Historical IR transitions unavailable; r_IR defaulted to 0.25."
+  ]
+}

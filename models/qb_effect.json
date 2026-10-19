@@ -1,0 +1,21 @@
+{
+  "kappa": 0.75,
+  "kappa_sample_size": 0,
+  "beta": {
+    "WR": {
+      "value": 0.6,
+      "sample_size": 0,
+      "default_used": true
+    },
+    "TE": {
+      "value": 0.6,
+      "sample_size": 0,
+      "default_used": true
+    },
+    "RB": {
+      "value": 0.3,
+      "sample_size": 0,
+      "default_used": true
+    }
+  }
+}
