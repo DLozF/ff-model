@@ -1,6 +1,8 @@
 import numpy as np
 
-from ffm.backtest import coverage, matchup_metrics, pinball_crps, pit_histogram
+from ffm.backtest import (
+    coverage, matchup_metrics, paired_cluster_bootstrap, pinball_crps, pit_histogram,
+)
 
 
 def test_pinball_crps_is_zero_for_exact_quantiles():
@@ -26,3 +28,10 @@ def test_matchup_metrics_are_exact_for_perfect_predictions():
     assert result["brier"] == 0
     assert result["log_loss"] < 1e-10
     assert sum(row["n"] for row in result["calibration"]) == 2
+
+
+def test_paired_cluster_bootstrap_preserves_constant_difference():
+    differences = np.array([-0.01, -0.01, -0.01, -0.01])
+    clusters = np.array(["w1", "w1", "w2", "w2"])
+    interval = paired_cluster_bootstrap(differences, clusters, seed=2026, samples=100)
+    assert interval == {"mean": -0.01, "low": -0.01, "high": -0.01}

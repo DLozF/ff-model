@@ -4,7 +4,7 @@ import numpy as np
 import polars as pl
 from scipy.stats import norm
 
-from ffm.backtest import matchup_metrics
+from ffm.backtest import matchup_metrics, paired_cluster_bootstrap
 from ffm.copula import repair_correlation
 from ffm.distributions import QuantileModel
 from fit_copula import fit_sigma
@@ -155,6 +155,7 @@ def run_season(frame, season, seed):
 def main():
     frame = pl.read_parquet(CACHE / "player_weeks.parquet")
     rows = run_season(frame, 2024, 2026) + run_season(frame, 2025, 2027)
+    pl.from_dicts(rows).write_parquet(CACHE / "matchup_predictions.parquet")
     results = {}
     for label, selected in (
         ("overall", rows), ("stacked", [row for row in rows if row["stacked"]]),
@@ -164,20 +165,43 @@ def main():
             model: matchup_metrics(np.array([row[model] for row in selected]), outcome)
             for model in ("copula", "independent")
         }
+        differences = (
+            (np.array([row["copula"] for row in selected]) - outcome) ** 2
+            - (np.array([row["independent"] for row in selected]) - outcome) ** 2
+        )
+        clusters = np.array([f"{row['season']}_w{row['week']}" for row in selected])
+        results[label]["brier_difference"] = paired_cluster_bootstrap(
+            differences, clusters, seed=2026 + len(results)
+        )
     lines = ["# Matchup calibration", ""]
     for label in ("overall", "stacked"):
+        difference = results[label]["brier_difference"]
         lines.extend([
             f"## {label.title()}", "",
-            "| Model | N | Brier | Log loss | Worst bin error |", "|---|---:|---:|---:|---:|",
+            f"- Copula minus independent Brier: {difference['mean']:+.8f} "
+            f"(paired week-bootstrap 95% interval [{difference['low']:+.8f}, {difference['high']:+.8f}])",
+            "",
+            "| Model | Pairs | Brier | Log loss | Worst bin error |", "|---|---:|---:|---:|---:|",
         ])
         for model in ("copula", "independent"):
             metrics = results[label][model]
             worst = max(row["error"] for row in metrics["calibration"] if row["n"])
             lines.append(f"| {model} | {sum(row['n'] for row in metrics['calibration'])} | {metrics['brier']:.6f} | {metrics['log_loss']:.6f} | {worst:.6f} |")
-        lines.extend(["", "### Copula calibration bins", "", "| Bin | N | Predicted | Actual | Error |", "|---:|---:|---:|---:|---:|"])
-        for row in results[label]["copula"]["calibration"]:
-            if row["n"]:
-                lines.append(f"| {row['bin']} | {row['n']} | {row['predicted']:.4f} | {row['actual']:.4f} | {row['error']:.4f} |")
+        lines.extend([
+            "", "### Calibration bins", "",
+            "| Bin | Copula pairs | Copula predicted | Copula actual | Copula error | Independent pairs | Independent predicted | Independent actual | Independent error |",
+            "|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        ])
+        copula_bins = results[label]["copula"]["calibration"]
+        independent_bins = results[label]["independent"]["calibration"]
+        for copula, independent in zip(copula_bins, independent_bins):
+            if copula["n"] or independent["n"]:
+                lines.append(
+                    f"| {copula['bin']} | {copula['n']} | {copula['predicted']:.4f} | "
+                    f"{copula['actual']:.4f} | {copula['error']:.4f} | {independent['n']} | "
+                    f"{independent['predicted']:.4f} | {independent['actual']:.4f} | "
+                    f"{independent['error']:.4f} |"
+                )
         lines.append("")
     (ROOT / "reports/matchup_calibration.md").write_text("\n".join(lines), encoding="utf-8")
     for label in results:

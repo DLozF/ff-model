@@ -48,3 +48,26 @@ def matchup_metrics(probability: np.ndarray, outcome: np.ndarray) -> dict:
         "log_loss": float(np.mean(-(outcome * np.log(clipped) + (1 - outcome) * np.log(1 - clipped)))),
         "calibration": calibration,
     }
+
+
+def paired_cluster_bootstrap(
+    differences: np.ndarray,
+    clusters: np.ndarray,
+    seed: int,
+    samples: int = 5000,
+) -> dict[str, float]:
+    """Bootstrap a paired mean difference by resampling whole clusters."""
+    differences = np.asarray(differences, dtype=float)
+    clusters = np.asarray(clusters)
+    unique = np.unique(clusters)
+    sums = np.array([differences[clusters == cluster].sum() for cluster in unique])
+    counts = np.array([(clusters == cluster).sum() for cluster in unique])
+    rng = np.random.default_rng(seed)
+    selected = rng.integers(0, unique.size, size=(samples, unique.size))
+    estimates = sums[selected].sum(axis=1) / counts[selected].sum(axis=1)
+    low, high = np.quantile(estimates, [0.025, 0.975])
+    return {
+        "mean": float(differences.mean()),
+        "low": float(low),
+        "high": float(high),
+    }

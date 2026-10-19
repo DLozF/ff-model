@@ -53,5 +53,7 @@
 - P8 checks: finder runtime 845.893s (<20 minutes); trade and waiver reports exist; 29 tests passed.
 - P9: reran with antithetic draws and separate selection/simulation RNG streams; report saved from 14,400 matchup pairs.
 - P9 check: Brier criteria passed; stacked calibration-bin gate failed; 30 tests passed.
+- P9 follow-up: report now lists pair counts for both models in every calibration bin and paired week-bootstrap 95% intervals for copula-minus-independent Brier.
+- P9 follow-up: stacked 6.51% error bin contains 360 pairs, so it is not marked low sample; full suite 33 passed.
 - P10: implemented yfpy OAuth loader, Yahoo-to-Sleeper IDs, DEF mapping, Parquet tables, config update, CSV alternative, and real-league loading.
 - P10 check: saved fake Yahoo JSON produced correct settings/rosters; full suite 32 passed. No Yahoo login attempted.
