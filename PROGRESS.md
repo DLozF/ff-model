@@ -11,7 +11,7 @@
 | P5 | done | QB1-WR1 r=0.3137; held-out stack variance ratio=1.1415 |
 | P6 | done | 5,000 worlds + season in 19.450s; playoff/champion sums exact |
 | P7 | done | Empty/clone zero; AJ Barner for Christian McCaffrey => ACCEPT |
-| P8 | not started | |
+| P8 | done | 37,125 trades + 600 waivers in 845.893s; both reports saved |
 | P9 | not started | |
 | P10 | not started | |
 | P11 | not started | |
@@ -22,6 +22,7 @@
 - `pulp_lineup` uses SciPy's MILP backend because installed PuLP 4.1 has no available solver binary.
 - P4 empirical miss/recovery and injury-status estimates failed sanity checks, so the documented position/status defaults were used.
 - Historical IR transitions were unavailable; r_IR=0.25. QB replacement sample was 0, so kappa=0.75 and beta defaults WR/TE=0.6, RB=0.3.
+- P8 used raw post-trade roster WELP as a fast pre-screen, then applied exact roster balancing and WELP before full confirmation.
 
 ## Blocked
 - P3 calibration gate: K=500/smoothing=9 retry still failed. Largest 2026 misses include TE 50% coverage=0.315, K 95%=0.841; DEF 2023 CRPS 3.216 vs Normal 3.150. Full results: reports/calibration.md.
@@ -46,3 +47,5 @@
 - P6 checks: P(playoffs) sum=6.000000000000, P(champion) sum=1.000000000000, same-seed check passed, runtime 19.450s; 24 tests passed.
 - P7: empty trade produced exact zero deltas; identical-world clone test produced NO CLEAR EFFECT.
 - P7: lopsided Team 1 AJ Barner for Team 5 Christian McCaffrey produced ACCEPT; sample report saved; 27 tests passed.
+- P8: screened all 37,125 requested trade shapes and 600 waiver pairs; 469 trades passed WELP and top 30 were confirmed.
+- P8 checks: finder runtime 845.893s (<20 minutes); trade and waiver reports exist; 29 tests passed.

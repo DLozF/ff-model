@@ -2,7 +2,6 @@ from difflib import get_close_matches
 
 import numpy as np
 
-from ffm.lineup import greedy
 from ffm.season import simulate_season
 
 
@@ -19,11 +18,27 @@ def roster_lineup_points(points, projections, available, positions, roster, worl
     indices = np.asarray(roster, dtype=int)
     count = points.shape[1] if worlds is None else min(worlds, points.shape[1])
     totals = np.empty((points.shape[0], count), dtype=np.float32)
+    roster_positions = positions[indices]
     for week in range(points.shape[0]):
-        selected = greedy(
-            projections[week, :count][:, indices], positions[indices],
-            available[week, :count][:, indices],
-        )
+        projected = projections[week, :count][:, indices]
+        active = available[week, :count][:, indices]
+        scores = np.where(active, projected, -np.inf)
+        selected = np.zeros_like(active)
+        for position, slots in (("QB", 1), ("RB", 2), ("WR", 2), ("TE", 1), ("K", 1), ("DEF", 1)):
+            eligible = np.flatnonzero(roster_positions == position)
+            if not eligible.size:
+                continue
+            order = np.argsort(scores[:, eligible], axis=1)[:, ::-1][:, :slots]
+            chosen = eligible[order]
+            rows = np.broadcast_to(np.arange(count)[:, None], chosen.shape)
+            valid = np.isfinite(scores[rows, chosen])
+            selected[rows[valid], chosen[valid]] = True
+        flex = np.isin(roster_positions, ["RB", "WR", "TE"])
+        flex_scores = np.where(flex[None, :] & active & ~selected, projected, -np.inf)
+        chosen_flex = np.argmax(flex_scores, axis=1)
+        rows = np.arange(count)
+        valid = np.isfinite(flex_scores[rows, chosen_flex])
+        selected[rows[valid], chosen_flex[valid]] = True
         totals[week] = np.sum(points[week, :count][:, indices] * selected, axis=1)
     return totals
 
