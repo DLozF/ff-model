@@ -97,3 +97,4 @@
 - A3: K beat Normal CRPS in all four periods. DEF lost only in 2023 (3.216 vs 3.150); a simpler empirical residual model still lost there and was rejected.
 - A4: injury outcomes join on exact season/week/gsis_id. All sanity gates pass; Out n=1,707 at 0.001757 and Questionable n=2,292 at 0.653141.
 - E4 rejected: Vegas implied-points CRPS gains were 0.047%/0.157%/0.119%/0.175% for 2023-2026, below the 1% adoption threshold in every period.
+- E5 rejected: rolling bias/spread CRPS gains were 0.719%/0.094%/-0.009%/0.036%; QB 2026 80% coverage improved only 71.9% to 72.4%.

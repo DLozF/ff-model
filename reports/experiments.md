@@ -38,3 +38,12 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Test periods: 2023, 2024, 2025, and completed 2026 weeks.
 - Adoption threshold: >=1% CRPS improvement in at least 3 of 4 periods and no period worse by >1%.
 - Result: rejected. CRPS improvements were 0.047% (2023), 0.157% (2024), 0.119% (2025), and 0.175% (2026); zero periods reached 1% and none worsened. Leakage check: maximum training season was S-1 for every test.
+
+## E5 Rolling bias and spread — preregistered
+
+- Hypothesis: an eight-week, per-position rolling CRPS calibration corrects recent bias and under/over-dispersion, especially QB 80% undercoverage.
+- Exact change: for each test week, fit bias `b` and residual scale `s` using only the previous eight completed weeks, shrink toward identity with prior weight 200, and apply to that week's quantiles.
+- Metric: sample-weighted CRPS across positions; QB 80% coverage is reported as a diagnostic.
+- Test periods: 2023, 2024, 2025, and completed 2026 weeks.
+- Adoption threshold: >=1% CRPS improvement in at least 3 of 4 periods and no period worse by >1%.
+- Result: rejected. CRPS improvements were 0.719% (2023), 0.094% (2024), -0.009% (2025), and 0.036% (2026); no period reached 1%. QB 80% coverage moved 79.6%→79.6%, 79.9%→78.0%, 78.1%→78.0%, and 71.9%→72.4%.
