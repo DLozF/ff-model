@@ -100,3 +100,4 @@
 - E5 rejected: rolling bias/spread CRPS gains were 0.719%/0.094%/-0.009%/0.036%; QB 2026 80% coverage improved only 71.9% to 72.4%.
 - E6 rejected: snap-share role adjustment changed RB/WR/TE CRPS by 0.019%/-0.003%/-0.031%/-0.003%; 2026 had no eligible six-week-history rows yet.
 - E7 rejected: selected t10 stacked-Brier changes were -0.069%/+0.081%/-0.279%/-0.124%; 2025 stack variance ratio worsened 1.15008 to 1.15053.
+- E8 rejected: no-shrink and 0.2-shrink stacked-Brier changes stayed within -0.038% to +0.079%, far below 1%; no-shrink improved the 2025 stack ratio to 1.109 but failed the adoption metric.

@@ -79,3 +79,4 @@ experiments:
   vegas_totals: false
   role_change: false
   t_copula: false
+  copula_shrink_experiment: false
