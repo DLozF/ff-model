@@ -80,7 +80,7 @@
 - Market acceptance tests: Henry for Coker + Monangai is UNLIKELY; an exact-value swap is LIKELY.
 - Injury override test: a weeks=TBD override leaves availability unchanged.
 - P6 market-draft rerun: 534 players, 5,000 worlds, 18.526s, deterministic; playoff sum=6 and champion sum=1.
-- Jalen Hurts weeks=TBD override was not applied and is listed in generated reports as needing Diego's input.
+- Initial Jalen Hurts override had weeks unset and was not applied; it was later resolved to rest of season below.
 - P7 market sample: Kyler Murray for Christian McCaffrey => ACCEPT/UNLIKELY, r=0.034, other receives V=275.0 and gives V=8016.0.
 - P8 market-first rerun: 37,125 candidates, 19,648 market passes, 322 WELP passes, 30 confirmed trades, 10 waivers; runtime 473.502s.
 - News check found 45 healthy players with trend30Day below -25% of V; list added to trade and waiver report tops.
