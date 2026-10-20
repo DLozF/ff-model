@@ -6,6 +6,7 @@ import polars as pl
 from ffm.actuals import merge_actual_sources
 from ffm.config import load_config
 from ffm.dataset import build_player_weeks
+from ffm.pbp_bonus import aggregate_bonus_stats, merge_bonus_stats
 from ffm.scoring import fantasy_points
 
 ROOT = Path("/opt/data/ff-model")
@@ -16,6 +17,9 @@ SCORING_KEYS = {
     "ret_td", "kr_td", "pr_td", "xpm", "fgm_0_19", "fgm_20_29",
     "fgm_30_39", "fgm_40_49", "fgm_50p", "fgm_50_59", "fgm_60p",
     "sack", "int", "fum_rec", "def_td", "safe", "blk_kick", "pts_allow",
+    "pass_cmp_40p", "pass_td_40p", "rush_40p", "rush_td_40p", "rec_40p",
+    "rec_td_40p", "off_fum_ret_td", "fourth_down_stop", "def_4_and_stop",
+    "xp_return", "def_kr_pr_td", "def_kr_td", "def_pr_td",
     "pts_ppr", "gp",
 }
 
@@ -34,9 +38,9 @@ def load_projections() -> pl.DataFrame:
         frame = pl.read_parquet(path)
         columns = [
             "season", "week", "player_id", "name", "position", "team",
-            "opponent", "pts_ppr",
+            "opponent", *sorted(SCORING_KEYS & set(frame.columns)),
         ]
-        frames.append(frame.select(columns))
+        frames.append(frame.select(list(dict.fromkeys(columns))))
     return pl.concat(frames, how="diagonal_relaxed")
 
 
@@ -58,6 +62,17 @@ def load_stats() -> pl.DataFrame:
     if source_frames[1].is_empty():
         return source_frames[0]
     return merge_actual_sources(*source_frames)
+
+
+def load_bonus_stats(ids: pl.DataFrame) -> pl.DataFrame:
+    """Load or build cached play-by-play bonus counts."""
+    path = CACHE / "nflverse_pbp_bonuses.parquet"
+    if path.exists():
+        return pl.read_parquet(path)
+    frames = [pl.read_parquet(source) for source in sorted(CACHE.glob("nflverse_pbp_bonus_*.parquet"))]
+    bonus = aggregate_bonus_stats(pl.concat(frames, how="diagonal_relaxed"), ids)
+    bonus.write_parquet(path)
+    return bonus
 
 
 def validation_rate(
@@ -95,6 +110,7 @@ def main():
     stats = load_stats()
     players = pl.read_parquet(CACHE / "sleeper_players.parquet")
     ids = pl.read_parquet(CACHE / "nflverse_ff_playerids.parquet")
+    stats = merge_bonus_stats(stats, load_bonus_stats(ids))
     snaps = pl.read_parquet(CACHE / "nflverse_snap_counts.parquet")
     player_weeks = build_player_weeks(
         projections, stats, players, ids, snaps, config["scoring"]

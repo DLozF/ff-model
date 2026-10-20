@@ -1,13 +1,15 @@
+import polars as pl
+
 from ffm.config import load_config
-from ffm.scoring import fantasy_points, nflverse_stat_line
+from ffm.scoring import fantasy_points, nflverse_stat_line, score_projection_frame
 
 
 SCORING = load_config()["scoring"]
 
 
-def test_scores_standard_offense():
+def test_scores_configured_offense():
     stats = {"pass_yd": 250, "pass_td": 2, "pass_int": 1, "rush_yd": 20}
-    assert fantasy_points(stats, "QB", SCORING) == 19
+    assert fantasy_points(stats, "QB", SCORING) == 22
 
 
 def test_scores_kicker_distance_buckets():
@@ -38,3 +40,38 @@ def test_nflverse_stat_line_maps_player_fields():
     assert mapped["ret_td"] == 1
     assert mapped["xpm"] == 2
     assert mapped["fgm_60p"] == 1
+
+
+def test_scores_yahoo_passing_bonuses_by_hand():
+    stats = {
+        "pass_yd": 320, "pass_td": 3, "pass_int": 0,
+        "pass_cmp_40p": 1, "pass_td_40p": 1,
+    }
+
+    assert fantasy_points(stats, "QB", SCORING) == 35.8
+
+
+def test_scores_yahoo_rushing_bonuses_by_hand():
+    stats = {"rush_yd": 110, "rush_40p": 1}
+
+    assert fantasy_points(stats, "RB", SCORING) == 14.0
+
+
+def test_milestone_scoring_supports_highest_and_stacked_modes():
+    stats = {"rush_yd": 160}
+    highest = {**SCORING, "milestone_mode": "highest"}
+    stacked = {**SCORING, "milestone_mode": "stacked"}
+
+    assert fantasy_points(stats, "RB", highest) == 19.0
+    assert fantasy_points(stats, "RB", stacked) == 22.0
+
+
+def test_score_projection_frame_uses_stat_lines_without_unprojectable_bonuses():
+    frame = pl.DataFrame({
+        "position": ["QB"], "pts_ppr": [99.0], "pass_yd": [320.0],
+        "pass_td": [3.0], "pass_int": [1.0],
+    })
+
+    scored = score_projection_frame(frame, SCORING)
+
+    assert scored.item(0, "proj_pts") == 28.8

@@ -13,6 +13,9 @@ UV_CACHE_DIR=/tmp/uv-cache UV_PYTHON_INSTALL_DIR=/tmp/uv-python uv pip install -
 PYTHONPATH=/opt/data/ff-model/src /tmp/ff-venv/bin/python scripts/cache_nflverse.py
 PYTHONPATH=/opt/data/ff-model/src /tmp/ff-venv/bin/python scripts/cache_sleeper.py
 
+# Partial Yahoo import: settings plus Diego's roster; opponents remain synthetic.
+PYTHONPATH=/opt/data/ff-model/src /tmp/ff-venv/bin/python scripts/parse_yahoo_paste.py --partial
+
 # Build the player-week dataset.
 PYTHONPATH=/opt/data/ff-model/src /tmp/ff-venv/bin/python scripts/build_dataset.py
 

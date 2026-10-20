@@ -1,5 +1,7 @@
 from collections.abc import Mapping
 
+import polars as pl
+
 
 NFLVERSE_TO_SCORING = {
     "pass_yd": "passing_yards",
@@ -15,6 +17,9 @@ NFLVERSE_TO_SCORING = {
     "rec_2pt": "receiving_2pt_conversions",
     "fum_lost": "fumbles_lost_total",
     "ret_td": "special_teams_tds",
+    "pass_cmp_40p": "passing_40",
+    "rush_40p": "rushing_40",
+    "rec_40p": "receiving_40",
     "xpm": "pat_made",
     "fgm_0_19": "fg_made_0_19",
     "fgm_20_29": "fg_made_20_29",
@@ -54,7 +59,17 @@ def _defense_tier(points: float, tiers: Mapping[str, float]) -> float:
     return float(tiers["35+"])
 
 
-def fantasy_points(stats: Mapping, position: str, scoring: Mapping) -> float:
+def _milestone_bonus(stats: Mapping, scoring: Mapping, key: str) -> float:
+    milestones = scoring.get(f"{key}_milestones", [])
+    reached = [float(row["points"]) for row in milestones if _value(stats, key) >= row["threshold"]]
+    if not reached:
+        return 0.0
+    return sum(reached) if scoring.get("milestone_mode") == "stacked" else max(reached)
+
+
+def fantasy_points(
+    stats: Mapping, position: str, scoring: Mapping, include_bonuses: bool = True
+) -> float:
     """Score a Sleeper stat line with the configured league rules."""
     if position == "DEF":
         total = (
@@ -64,6 +79,11 @@ def fantasy_points(stats: Mapping, position: str, scoring: Mapping) -> float:
             + _value(stats, "def_td") * scoring["def_td"]
             + _value(stats, "safe") * scoring["def_safety"]
             + _value(stats, "blk_kick") * scoring["def_blk_kick"]
+            + (_value(stats, "fourth_down_stop") + _value(stats, "def_4_and_stop"))
+            * scoring.get("def_fourth_down_stop", 0)
+            + _value(stats, "xp_return") * scoring.get("def_xp_return", 0)
+            + (_value(stats, "def_kr_pr_td") + _value(stats, "def_kr_td") + _value(stats, "def_pr_td"))
+            * scoring.get("def_kr_pr_td", 0)
         )
         return total + _defense_tier(_value(stats, "pts_allow"), scoring["def_pts_allowed"])
 
@@ -80,7 +100,7 @@ def fantasy_points(stats: Mapping, position: str, scoring: Mapping) -> float:
             + fgm_50p * scoring["fgm_50p"]
         )
 
-    return sum(
+    total = sum(
         _value(stats, key) * scoring[key]
         for key in (
             "pass_yd", "pass_td", "pass_int", "pass_2pt", "rush_yd",
@@ -89,4 +109,29 @@ def fantasy_points(stats: Mapping, position: str, scoring: Mapping) -> float:
         )
     ) + (
         _value(stats, "ret_td") + _value(stats, "kr_td") + _value(stats, "pr_td")
-    ) * scoring["ret_td"]
+    ) * scoring["ret_td"] + (
+        _value(stats, "off_fum_ret_td") + _value(stats, "fum_rec_ez_tds")
+    ) * scoring.get("off_fum_ret_td", 0)
+    if include_bonuses:
+        total += sum(
+            _value(stats, stat_key) * scoring.get(score_key, 0)
+            for stat_key, score_key in (
+                ("pass_cmp_40p", "pass_cmp_40p"), ("pass_td_40p", "pass_td_40p"),
+                ("rush_40p", "rush_40p"), ("rush_td_40p", "rush_td_40p"),
+                ("rec_40p", "rec_40p"), ("rec_td_40p", "rec_td_40p"),
+            )
+        )
+        total += sum(_milestone_bonus(stats, scoring, key) for key in ("pass_yd", "rush_yd", "rec_yd"))
+    return total
+
+
+def score_projection_frame(frame: pl.DataFrame, scoring: Mapping) -> pl.DataFrame:
+    """Rescore Sleeper projected stat lines without unprojectable play bonuses."""
+    return frame.with_columns(
+        pl.struct(frame.columns).map_elements(
+            lambda row: fantasy_points(
+                row, row.get("position"), scoring, include_bonuses=False
+            ),
+            return_dtype=pl.Float64,
+        ).alias("proj_pts")
+    )

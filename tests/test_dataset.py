@@ -9,7 +9,8 @@ def test_build_player_weeks_joins_and_filters():
         "season": [2025, 2025], "week": [1, 1], "player_id": ["1", "2"],
         "name": ["One", "Two"], "position": ["WR", "RB"],
         "team": ["LA", "SEA"], "opponent": ["SF", "ARI"],
-        "pts_ppr": [10.0, 0.1],
+        "pts_ppr": [10.0, 0.1], "rec": [3.0, 0.0],
+        "rec_yd": [40.0, 0.0], "rec_td": [0.0, 0.0],
     })
     stats = pl.DataFrame({
         "season": [2025], "week": [1], "player_id": ["1"],
@@ -27,14 +28,15 @@ def test_build_player_weeks_joins_and_filters():
     assert result.row(0, named=True) == {
         "season": 2025, "week": 1, "sleeper_id": "1", "gsis_id": "g1",
         "name": "One", "pos": "WR", "team": "LAR", "opp": "SF",
-        "proj_pts": 10.0, "act_pts": 16.0, "played": True,
+        "proj_pts": 7.0, "act_pts": 16.0, "played": True,
     }
 
 
 def test_zero_stat_placeholder_is_not_marked_played():
     projections = pl.DataFrame({
         "season": [2025], "week": [1], "player_id": ["2"], "name": ["Two"],
-        "position": ["RB"], "team": ["SEA"], "opponent": ["ARI"], "pts_ppr": [5.0],
+        "position": ["RB"], "team": ["SEA"], "opponent": ["ARI"],
+        "pts_ppr": [5.0], "rush_yd": [50.0],
     })
     stats = pl.DataFrame({
         "season": [2025], "week": [1], "player_id": ["2"], "pts_ppr": [0.0], "gp": [0.0],
@@ -54,7 +56,8 @@ def test_zero_stat_placeholder_is_not_marked_played():
 def test_snap_without_actual_stats_is_not_marked_played():
     projections = pl.DataFrame({
         "season": [2026], "week": [6], "player_id": ["2"], "name": ["Two"],
-        "position": ["RB"], "team": ["SEA"], "opponent": ["ARI"], "pts_ppr": [8.0],
+        "position": ["RB"], "team": ["SEA"], "opponent": ["ARI"],
+        "pts_ppr": [8.0], "rush_yd": [80.0],
     })
     stats = pl.DataFrame(schema={"season": pl.Int64, "week": pl.Int64, "player_id": pl.String})
     players = pl.DataFrame({

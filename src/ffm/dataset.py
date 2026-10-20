@@ -61,7 +61,7 @@ def build_player_weeks(
         position = projection.get("position") or player.get("position") or identity.get("position")
         if position not in {"QB", "RB", "WR", "TE", "K", "DEF"}:
             continue
-        proj_pts = float(projection.get("pts_ppr") or 0.0)
+        proj_pts = fantasy_points(projection, position, scoring, include_bonuses=False)
         act_pts = fantasy_points(actual or {}, position, scoring)
         if proj_pts < 0.5 and act_pts == 0:
             continue

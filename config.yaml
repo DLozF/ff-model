@@ -1,14 +1,15 @@
 league:
   teams: 12
-  my_team: Team 1
+  my_team: "Chalino S\xE1nchez"
   lineup:
     QB: 1
-    RB: 2
     WR: 2
+    RB: 2
     TE: 1
     FLEX: 1
     K: 1
     DEF: 1
+    D: 1
   flex_eligible:
   - RB
   - WR
@@ -22,33 +23,47 @@ league:
   - 15
   - 16
   - 17
-  tiebreaker: points_for
+  tiebreaker: higher_seed
+  ir_slots: 2
+  playoff_reseeding: true
+  waiver_type: rolling
+  waiver_days: 2
+  weekly_waivers: Game Time - Tuesday
+  trade_deadline: November 28, 2026
+  draft_pick_trades: false
+  trade_review: None
+  waiver_priority: 8
+  current_week: 7
+  faab_budget: null
+  partial_import: true
+  acquisition_limit: null
+  weekly_acquisition_limit: null
 scoring:
   pass_yd: 0.04
-  pass_td: 4
-  pass_int: -1
-  pass_2pt: 2
+  pass_td: 6.0
+  pass_int: -2.0
+  pass_2pt: 2.0
   rush_yd: 0.1
-  rush_td: 6
-  rush_2pt: 2
+  rush_td: 6.0
+  rush_2pt: 2.0
   rec: 1.0
   rec_yd: 0.1
-  rec_td: 6
-  rec_2pt: 2
-  fum_lost: -2
-  ret_td: 6
-  xpm: 1
-  fgm_0_19: 3
-  fgm_20_29: 3
-  fgm_30_39: 3
-  fgm_40_49: 4
-  fgm_50p: 5
-  def_sack: 1
-  def_int: 2
-  def_fum_rec: 2
-  def_td: 6
-  def_safety: 2
-  def_blk_kick: 2
+  rec_td: 6.0
+  rec_2pt: 2.0
+  fum_lost: -2.0
+  ret_td: 6.0
+  xpm: 1.0
+  fgm_0_19: 3.0
+  fgm_20_29: 3.0
+  fgm_30_39: 3.0
+  fgm_40_49: 4.0
+  fgm_50p: 5.0
+  def_sack: 1.0
+  def_int: 2.0
+  def_fum_rec: 2.0
+  def_td: 6.0
+  def_safety: 2.0
+  def_blk_kick: 2.0
   def_pts_allowed:
     '0': 10
     1-6: 7
@@ -57,6 +72,38 @@ scoring:
     21-27: 0
     28-34: -1
     35+: -4
+  milestone_mode: highest
+  pass_yd_milestones:
+  - threshold: 300
+    points: 2.0
+  - threshold: 350
+    points: 3.0
+  - threshold: 400
+    points: 4.0
+  rush_yd_milestones:
+  - threshold: 50
+    points: 1.0
+  - threshold: 100
+    points: 2.0
+  - threshold: 150
+    points: 3.0
+  rec_yd_milestones:
+  - threshold: 100
+    points: 1.0
+  - threshold: 150
+    points: 2.0
+  - threshold: 200
+    points: 3.0
+  off_fum_ret_td: 6.0
+  pass_cmp_40p: 1.0
+  pass_td_40p: 2.0
+  rush_40p: 1.0
+  rush_td_40p: 3.0
+  rec_40p: 1.0
+  rec_td_40p: 3.0
+  def_fourth_down_stop: 2.0
+  def_xp_return: 2.0
+  def_kr_pr_td: 6.0
 sim:
   seed: 2026
   n_dev: 1000
@@ -81,3 +128,17 @@ experiments:
   t_copula: false
   copula_shrink_experiment: false
   risk_sensitive_lineup: false
+idp_scoring:
+  tackle_solo: 1.0
+  tackle_assist: 0.5
+  sack: 2.0
+  interception: 3.0
+  fumble_force: 2.0
+  fumble_recovery: 2.0
+  defensive_td: 6.0
+  safety: 2.0
+  pass_defended: 1.0
+  block_kick: 2.0
+  tackle_for_loss: 2.0
+  turnover_return_yd: 25.0
+  xp_return: 2.0

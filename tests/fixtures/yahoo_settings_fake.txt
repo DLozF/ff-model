@@ -1,0 +1,23 @@
+Scoring & Settings
+Setting	Value
+Max Teams:	12
+Trade End Date:	November 28, 2026
+Waiver Time:	2 days
+Waiver Type:	Continual rolling list
+Weekly Waivers	Game Time - Tuesday
+Playoffs:	6 teams - Week 15, 16 and 17 (ends Sunday, January 4)
+Playoff Tie-Breaker:	Higher seed wins
+Playoff Reseeding:	Yes
+Roster Positions:	QB, WR, WR, RB, RB, TE, W/R/T, K, DEF, D, BN, BN, BN, BN, BN, BN, IR, IR
+Passing Yards	25 yards per point; 2 points at 300 yards; 3 points at 350 yards; 4 points at 400 yards
+Passing Touchdowns	6
+Interceptions	-2
+Rushing Yards	10 yards per point; 1 points at 50 yards; 2 points at 100 yards; 3 points at 150 yards
+Receiving Yards	10 yards per point; 1 points at 100 yards; 2 points at 150 yards; 3 points at 200 yards
+Defense/Special Teams	League Value
+Sack	1
+4th Down Stops	2
+Extra Point Returned	2
+Defensive Players	League Value
+Tackle Solo	1
+Sack	2

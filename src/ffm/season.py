@@ -48,6 +48,7 @@ def simulate_team_scores(
     week_numbers: list[int],
     regular_season_end: int,
     playoff_teams: int,
+    playoff_reseeding: bool = False,
 ) -> dict:
     """Simulate standings and playoffs from cached team scores."""
     worlds = team_scores.shape[1]
@@ -75,8 +76,17 @@ def simulate_team_scores(
     seed_teams = seeds[:, :6]
     winner_36 = _winner(week15, seed_teams[:, 2], seed_teams[:, 5])
     winner_45 = _winner(week15, seed_teams[:, 3], seed_teams[:, 4])
-    finalist_1 = _winner(week16, seed_teams[:, 0], winner_45)
-    finalist_2 = _winner(week16, seed_teams[:, 1], winner_36)
+    if playoff_reseeding:
+        seed_rank = np.empty_like(seeds)
+        np.put_along_axis(seed_rank, seeds, np.arange(teams)[None, :], axis=1)
+        winner_36_is_lower = _scores_for(seed_rank, winner_36) > _scores_for(seed_rank, winner_45)
+        low_remaining = np.where(winner_36_is_lower, winner_36, winner_45)
+        high_remaining = np.where(winner_36_is_lower, winner_45, winner_36)
+        finalist_1 = _winner(week16, seed_teams[:, 0], low_remaining)
+        finalist_2 = _winner(week16, seed_teams[:, 1], high_remaining)
+    else:
+        finalist_1 = _winner(week16, seed_teams[:, 0], winner_45)
+        finalist_2 = _winner(week16, seed_teams[:, 1], winner_36)
     champion = _winner(week17, finalist_1, finalist_2)
     champion_flags = np.zeros((worlds, teams), dtype=bool)
     champion_flags[np.arange(worlds), champion] = True
@@ -105,9 +115,10 @@ def simulate_season(
     week_numbers: list[int],
     regular_season_end: int,
     playoff_teams: int,
+    playoff_reseeding: bool = False,
 ) -> dict:
     """Simulate standings and a six-team, three-week playoff bracket."""
     return simulate_team_scores(
         _team_scores(points, projections, available, positions, rosters),
-        week_numbers, regular_season_end, playoff_teams,
+        week_numbers, regular_season_end, playoff_teams, playoff_reseeding,
     )

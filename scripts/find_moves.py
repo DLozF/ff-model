@@ -36,9 +36,21 @@ def paired_summary(before, after, team):
     }
 
 
+def trades_open(deadline: str, today) -> bool:
+    """Return whether trades are allowed through the configured deadline."""
+    return today <= datetime.strptime(deadline, "%B %d, %Y").date()
+
+
+def eligible_waiver_candidates(adds, roster, protected):
+    """Yield add/drop pairs that leave current IR players on the roster."""
+    return [(drop, add) for add in adds for drop in roster if drop not in protected]
+
+
 def main():
     started = time.perf_counter()
     config = load_config()
+    today = datetime.now(ZoneInfo("America/Chicago")).date()
+    trade_enabled = trades_open(config["league"]["trade_deadline"], today)
     world_dir = load_world_directory(ROOT / "models/world_manifest.json")
     points = np.load(world_dir / "points.npy", mmap_mode="r")
     available = np.load(world_dir / "available.npy", mmap_mode="r")
@@ -65,6 +77,9 @@ def main():
     my_team = league["teams"].index(config["league"]["my_team"])
     rosters = league["rosters"]
     free_agents = league["free_agents"]
+    fixed_idp = np.asarray(
+        league.get("fixed_idp_week_points", [league.get("fixed_idp_points", 0.0)] * len(weeks))
+    )[:, None]
     cache = {}
 
     def welp(roster):
@@ -79,7 +94,7 @@ def main():
     screened = []
     candidate_count = 0
     market_pass = 0
-    for other_team in range(len(rosters)):
+    for other_team in range(len(rosters)) if trade_enabled else []:
         if other_team == my_team:
             continue
         for give, get in trade_candidates(rosters[my_team], rosters[other_team]):
@@ -113,13 +128,21 @@ def main():
         roster_team_scores(points, projections, available, positions, roster)
         for roster in rosters
     ], axis=2)
-    before = simulate_team_scores(base_scores, weeks, 14, 6)
+    base_scores[:, :, my_team] += fixed_idp
+    before = simulate_team_scores(
+        base_scores, weeks, config["league"]["regular_season_weeks"][1],
+        config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+    )
     stress_points, stress_available = stress_worlds(points, available, positions)
     stress_base_scores = np.stack([
         roster_team_scores(stress_points, projections, stress_available, positions, roster)
         for roster in rosters
     ], axis=2)
-    stress_before = simulate_team_scores(stress_base_scores, weeks, 14, 6)
+    stress_base_scores[:, :, my_team] += fixed_idp
+    stress_before = simulate_team_scores(
+        stress_base_scores, weeks, config["league"]["regular_season_weeks"][1],
+        config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+    )
     criterion = "champion" if before["playoff"][:, my_team].mean() > 0.9 else "playoffs"
     confirmed = []
     for row in screened[:30]:
@@ -134,11 +157,19 @@ def main():
                 stress_points, projections, stress_available, positions,
                 row["rosters"][team],
             )
-        after = simulate_team_scores(after_scores, weeks, 14, 6)
+        after_scores[:, :, my_team] += fixed_idp
+        stress_after_scores[:, :, my_team] += fixed_idp
+        after = simulate_team_scores(
+            after_scores, weeks, config["league"]["regular_season_weeks"][1],
+            config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+        )
         mine = paired_summary(before, after, my_team)
         other = paired_summary(before, after, row["other_team"])
         verdict = trade_verdict(mine[criterion])
-        stress_after = simulate_team_scores(stress_after_scores, weeks, 14, 6)
+        stress_after = simulate_team_scores(
+            stress_after_scores, weeks, config["league"]["regular_season_weeks"][1],
+            config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+        )
         stress_mine = paired_summary(stress_before, stress_after, my_team)
         stress_verdict = trade_verdict(stress_mine[criterion])
         fragility, fragility_reason = fragility_label(verdict, stress_verdict)
@@ -152,8 +183,12 @@ def main():
     confirmed.sort(key=lambda row: row["mine"][criterion]["mean"], reverse=True)
 
     top_free_agents = sorted(free_agents, key=lambda player: ros[player], reverse=True)[:40]
+    ir_players = {
+        row["player_id"]
+        for row in players.filter(pl.col("position") == "IR").iter_rows(named=True)
+    } if "IR" in players.get_column("position").to_list() else set()
     waiver_screen = []
-    for drop, add in waiver_candidates(top_free_agents, rosters[my_team]):
+    for drop, add in eligible_waiver_candidates(top_free_agents, rosters[my_team], ir_players):
         updated_roster = [player for player in rosters[my_team] if player != drop] + [add]
         gain = welp(updated_roster) - baseline[my_team]
         if gain > 0:
@@ -167,15 +202,23 @@ def main():
         after_scores[:, :, my_team] = roster_team_scores(
             points, projections, available, positions, updated_roster
         )
-        after = simulate_team_scores(after_scores, weeks, 14, 6)
+        after_scores[:, :, my_team] += fixed_idp
+        after = simulate_team_scores(
+            after_scores, weeks, config["league"]["regular_season_weeks"][1],
+            config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+        )
         mine = paired_summary(before, after, my_team)
         waiver_results.append({
             "gain": gain, "drop": drop, "add": add, "mine": mine,
             "verdict": trade_verdict(mine[criterion]),
         })
 
-    date = datetime.now(ZoneInfo("America/Chicago")).date().isoformat()
-    trade_lines = [f"# Trade ideas: {date}", "", *news_lines(news)]
+    date = today.isoformat()
+    trade_lines = [f"# Trade ideas with synthetic opponents: {date}", "", *news_lines(news)]
+    if not trade_enabled:
+        trade_lines.extend([
+            f"Trades skipped: deadline was {config['league']['trade_deadline']}.", "",
+        ])
     trade_lines.extend(["## Injury overrides needing Diego's input", ""])
     if pending_overrides:
         trade_lines.extend(
@@ -208,7 +251,10 @@ def main():
     (ROOT / "reports" / f"trade_ideas_{date}.md").write_text("\n".join(trade_lines) + "\n", encoding="utf-8")
 
     waiver_lines = [
-        f"# Waiver ideas: {date}", "", *news_lines(news),
+        f"# Waiver ideas: {date}", "",
+        *(["**Free agents are estimated; confirm on Yahoo before claiming.**", ""]
+          if league.get("free_agents_estimated") else []),
+        *news_lines(news),
         "## Injury overrides needing Diego's input", "",
     ]
     if pending_overrides:

@@ -63,6 +63,42 @@ def synthetic_draft(players: pl.DataFrame, teams: int = 12, roster_size: int = 1
     }
 
 
+def partial_synthetic_league(
+    players: pl.DataFrame,
+    real_roster_ids: list[str],
+    real_team_name: str,
+    teams: int = 12,
+    roster_size: int = 15,
+) -> dict:
+    """Keep one real roster and draft synthetic opponents from the remaining pool."""
+    id_to_index = {
+        str(player_id): index
+        for index, player_id in enumerate(players.get_column("sleeper_id"))
+    }
+    missing = [player_id for player_id in real_roster_ids if str(player_id) not in id_to_index]
+    if missing:
+        raise ValueError(f"real roster players missing from simulation pool: {missing}")
+    real_roster = [id_to_index[str(player_id)] for player_id in real_roster_ids]
+    real_set = set(real_roster)
+    remaining_indices = [index for index in range(players.height) if index not in real_set]
+    drafted = synthetic_draft(
+        players[remaining_indices], teams=teams - 1, roster_size=roster_size
+    )
+    opponent_rosters = [
+        [remaining_indices[index] for index in roster]
+        for roster in drafted["rosters"]
+    ]
+    opponent_free_agents = [remaining_indices[index] for index in drafted["free_agents"]]
+    return {
+        "teams": [real_team_name, *[f"Team {index}" for index in range(2, teams + 1)]],
+        "rosters": [real_roster, *opponent_rosters],
+        "free_agents": opponent_free_agents,
+        "market_values": _draft_values(players).tolist(),
+        "partial_import": True,
+        "real_team_index": 0,
+    }
+
+
 def load_real_league(cache: str | Path, player_index: pl.DataFrame) -> dict:
     """Load normalized Yahoo rosters and current standings."""
     cache = Path(cache)

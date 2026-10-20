@@ -8,9 +8,10 @@ import polars as pl
 from ffm.config import load_config
 from ffm.distributions import QuantileModel
 from ffm.ids import normalize_team
-from ffm.league import synthetic_draft
+from ffm.league import partial_synthetic_league
 from ffm.market import join_market, load_market, write_model_vs_market
-from ffm.season import simulate_season
+from ffm.scoring import score_projection_frame
+from ffm.season import roster_team_scores, simulate_team_scores
 from ffm.worlds import (
     generate_worlds,
     load_injury_overrides,
@@ -32,26 +33,24 @@ def completed_weeks(schedules, season):
     return sorted(grouped.filter("complete").get_column("week").to_list())
 
 
-def load_projection_history(season):
+def load_projection_history(season, scoring):
     """Load compact cached projections for one season."""
     frames = []
     for path in sorted(CACHE.glob(f"sleeper_projections_{season}_w*.parquet")):
         frame = pl.read_parquet(path)
-        frames.append(frame.select(
-            "season", "week", "player_id", "name", "position", "team", "opponent", "pts_ppr"
-        ))
+        frames.append(score_projection_frame(frame, scoring))
     return pl.concat(frames, how="diagonal_relaxed").filter(
         pl.col("position").is_in(VALID_POSITIONS)
     )
 
 
-def prepare_players(history, weeks, sleeper_players):
+def prepare_players(history, weeks, sleeper_players, forced_ids=()):
     """Select players and build future projection matrix."""
     future = history.filter(pl.col("week").is_in(weeks)).with_columns(
-        pl.col("pts_ppr").fill_null(0)
+        pl.col("proj_pts").fill_null(0)
     )
     ros = future.group_by("player_id").agg(
-        pl.col("pts_ppr").sum().alias("ros_points"),
+        pl.col("proj_pts").sum().alias("ros_points"),
         pl.col("name").drop_nulls().last(), pl.col("position").drop_nulls().last(),
         pl.col("team").drop_nulls().last(),
     ).filter(pl.col("team").is_not_null())
@@ -61,11 +60,13 @@ def prepare_players(history, weeks, sleeper_players):
         extras.update(
             ros.filter(pl.col("position") == position).sort("ros_points", descending=True).head(32).get_column("player_id").to_list()
         )
-    selected = ros.filter(pl.col("player_id").is_in(top | extras)).sort("ros_points", descending=True)
+    selected = ros.filter(
+        pl.col("player_id").is_in(top | extras | {str(value) for value in forced_ids})
+    ).sort("ros_points", descending=True)
     metadata = sleeper_players.select("player_id", "injury_status")
     players = selected.join(metadata, on="player_id", how="left").with_row_index("player_index")
     lookup = {
-        (row["player_id"], row["week"]): float(row["pts_ppr"] or 0)
+        (row["player_id"], row["week"]): float(row["proj_pts"] or 0)
         for row in history.iter_rows(named=True)
     }
     matrix = np.zeros((len(weeks), players.height), dtype=np.float32)
@@ -102,10 +103,19 @@ def schedule_inputs(schedules, weeks, players):
     return bye, games
 
 
+def fixed_idp_schedule(games, team, weekly_points):
+    """Return fixed IDP points by week, with zero during the player's bye."""
+    normalized = normalize_team(team)
+    return [
+        float(weekly_points) if normalized in {club for game in week for club in game} else 0.0
+        for week in games
+    ]
+
+
 def write_report(league, result, runtime, reproducible, teams, pending_overrides):
     """Write synthetic league odds."""
     lines = [
-        "# Synthetic league odds", "",
+        "# League odds (synthetic opponents)", "",
         f"- n_final worlds + season runtime: {runtime:.3f} seconds",
         f"- Same-seed reproducibility check: {'passed' if reproducible else 'failed'}", "",
         "| Team | P(playoffs) | P(bye) | P(champion) | Expected wins | Expected points |",
@@ -134,9 +144,13 @@ def main():
     completed = completed_weeks(schedules, 2026)
     first_week = max(completed) + 1
     weeks = list(range(first_week, config["league"]["playoff_weeks"][-1] + 1))
-    history = load_projection_history(2026)
+    partial_roster = pl.read_parquet(CACHE / "yahoo_partial_roster.parquet")
+    real_roster_ids = partial_roster.filter(
+        pl.col("sleeper_id").is_not_null() & ~pl.col("model_excluded")
+    ).get_column("sleeper_id").cast(pl.String).to_list()
+    history = load_projection_history(2026, config["scoring"])
     sleeper_players = pl.read_parquet(CACHE / "sleeper_players.parquet")
-    players, projections = prepare_players(history, weeks, sleeper_players)
+    players, projections = prepare_players(history, weeks, sleeper_players, real_roster_ids)
     market = load_market(CACHE)
     players = join_market(players, market, "player_id", ROOT / "logs/fantasycalc_unmatched.log")
     write_model_vs_market(players, market, ROOT / "reports/model_vs_market.md")
@@ -159,7 +173,19 @@ def main():
         pl.col("player_id").alias("sleeper_id"), "name",
         pl.col("position").alias("pos"), "ros_points", "market_value",
     )
-    league = synthetic_draft(draft_players, teams=config["league"]["teams"], roster_size=15)
+    league = partial_synthetic_league(
+        draft_players, real_roster_ids, config["league"]["my_team"],
+        teams=config["league"]["teams"], roster_size=15,
+    )
+    idp = partial_roster.filter(pl.col("model_excluded"))
+    fixed_idp_points = float(idp.get_column("yahoo_proj_w7").fill_null(0).mean()) if idp.height else 0.0
+    fixed_idp_team = idp.item(0, "nfl_team") if idp.height else None
+    fixed_idp_week_points = fixed_idp_schedule(games, fixed_idp_team, fixed_idp_points) if idp.height else [0.0] * len(weeks)
+    league["fixed_idp_points"] = fixed_idp_points
+    league["fixed_idp_name"] = idp.item(0, "name") if idp.height else None
+    league["fixed_idp_team"] = fixed_idp_team
+    league["fixed_idp_week_points"] = fixed_idp_week_points
+    league["free_agents_estimated"] = not (ROOT / "data/yahoo_paste/available.txt").exists()
     league["player_ids"] = players.get_column("player_id").to_list()
     (ROOT / "models/synthetic_league.json").write_text(json.dumps(league, indent=2), encoding="utf-8")
 
@@ -179,9 +205,14 @@ def main():
         qb_effect, sigma, config["sim"]["n_final"], config["sim"]["seed"],
         player_names, overrides,
     )
-    result = simulate_season(
-        points, proj_seen, available, positions, league["rosters"], weeks,
-        config["league"]["regular_season_weeks"][1], config["league"]["playoff_teams"],
+    team_scores = np.stack([
+        roster_team_scores(points, proj_seen, available, positions, roster)
+        for roster in league["rosters"]
+    ], axis=2)
+    team_scores[:, :, league["real_team_index"]] += np.asarray(fixed_idp_week_points)[:, None]
+    result = simulate_team_scores(
+        team_scores, weeks, config["league"]["regular_season_weeks"][1],
+        config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
     )
     runtime = time.perf_counter() - started
     world_dir = Path(config["paths"]["worlds"]) / f"2026_w{first_week}"

@@ -25,7 +25,7 @@ def test_nflverse_actual_rows_maps_ids_and_scores():
     actuals = nflverse_actual_rows(stats, ids, load_config()["scoring"])
 
     assert actuals.row(0, named=True)["player_id"] == "123"
-    assert actuals.row(0, named=True)["pts_ppr"] == 19.0
+    assert actuals.row(0, named=True)["pts_ppr"] == 22.0
     assert actuals.row(0, named=True)["gp"] == 1.0
 
 

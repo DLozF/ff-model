@@ -1,0 +1,8 @@
+# Team: Example Team
+# Copied from Yahoo: 2026-10-20, current week 7
+# Waiver priority: 8th
+slot,name,pos,nfl_team,bye,yahoo_status,yahoo_proj_w7,pct_start,pct_rostered
+QB,José Test Jr.,QB,LA,8,,20.5,50,80
+DEF,Denver Broncos,DEF,DEN,10,,8.0,50,80
+D,Alex Safety,S,BAL,13,,7.5,50,80
+IR,Sample Runner III,RB,CLE,11,IR-R,0,0,5

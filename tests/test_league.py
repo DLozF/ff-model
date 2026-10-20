@@ -1,7 +1,7 @@
 import numpy as np
 import polars as pl
 
-from ffm.league import synthetic_draft
+from ffm.league import partial_synthetic_league, synthetic_draft
 
 
 def test_synthetic_draft_builds_unique_legal_rosters():
@@ -41,3 +41,22 @@ def test_synthetic_draft_orders_players_by_market_value():
     league = synthetic_draft(players, teams=1, roster_size=1)
 
     assert league["rosters"] == [[0]]
+
+
+def test_partial_synthetic_league_keeps_real_roster_and_avoids_duplicates():
+    positions = np.array((["QB"] * 30 + ["RB"] * 80 + ["WR"] * 90 + ["TE"] * 40 + ["K"] * 25 + ["DEF"] * 25))
+    players = pl.DataFrame({
+        "sleeper_id": [f"p{i}" for i in range(len(positions))],
+        "name": [f"Player {i}" for i in range(len(positions))],
+        "pos": positions,
+        "market_value": np.arange(len(positions), dtype=float),
+    })
+    real_ids = ["p0", "p30", "p110", "p200", "p240", "p265"]
+
+    league = partial_synthetic_league(players, real_ids, "Real Team", teams=12, roster_size=15)
+    drafted = [player for roster in league["rosters"] for player in roster]
+
+    assert league["teams"][0] == "Real Team"
+    assert league["rosters"][0] == [0, 30, 110, 200, 240, 265]
+    assert len(drafted) == len(set(drafted))
+    assert not set(league["rosters"][0]) & set(player for roster in league["rosters"][1:] for player in roster)

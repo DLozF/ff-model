@@ -32,8 +32,8 @@ Top 150 players by FantasyCalc redraft value.
 | Mike Evans | WR | 2816 | 10 | 21 | -11 |
 | Wan'Dale Robinson | WR | 560 | 33 | 44 | -11 |
 | Chris Godwin | WR | 362 | 43 | 54 | -11 |
-| Kyler Murray | QB | 275 | 11 | 21 | -10 |
-| Rashee Rice | WR | 2020 | 16 | 25 | -9 |
+| Rashee Rice | WR | 2020 | 15 | 25 | -10 |
+| Kyler Murray | QB | 275 | 12 | 21 | -9 |
 | Xavier Worthy | WR | 536 | 37 | 45 | -8 |
 | Bryce Young | QB | 1096 | 8 | 15 | -7 |
 | Carnell Tate | WR | 1417 | 24 | 31 | -7 |
@@ -41,13 +41,3 @@ Top 150 players by FantasyCalc redraft value.
 | Tony Pollard | RB | 1102 | 26 | 33 | -7 |
 | Jordan Mason | RB | 990 | 29 | 36 | -7 |
 | DJ Moore | WR | 1776 | 21 | 27 | -6 |
-
-<!-- forward-test:start -->
-## Forward-test rank accuracy
-
-Mean absolute error versus each week's actual within-position rank; lower is better.
-
-| Snapshot | Season | Week | Pos | Players | Model MAE | Market MAE | Closer |
-|---|---:|---:|---|---:|---:|---:|---|
-| - | - | - | - | - | - | - | No completed snapshots yet |
-<!-- forward-test:end -->

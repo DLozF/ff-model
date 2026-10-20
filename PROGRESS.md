@@ -14,7 +14,8 @@
 | P8 | done | Market-first 37,125-trade finder completed in 473.502s |
 | P9 | blocked | Copula Brier wins overall/stacked; stacked worst decile error 6.51% |
 | P10 | done | Fake Yahoo JSON test passes; live and CSV loaders documented |
-| P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
+|- P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
+| T01 | done | Partial Yahoo import: league scoring refit, real roster in, P6/P8 rebuilt |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -103,3 +104,8 @@
 - E8 rejected: no-shrink and 0.2-shrink stacked-Brier changes stayed within -0.038% to +0.079%, far below 1%; no-shrink improved the 2025 stack ratio to 1.109 but failed the adoption metric.
 - E9 added: trade reports now include a score-spread/QB-availability stress verdict and label changed verdicts FRAGILE; the P7 sample remained ACCEPT/ROBUST.
 - E10 rejected: variance tiebreak win-rate changes were -0.319%/-0.561%/-0.745%/-2.372%, and it left more hindsight points on the bench in every period.
+- T01: parsed `data/yahoo_paste/` settings and roster into config; 17 of 17 model players matched (1 IDP excluded); free-agent pool estimated because `available.txt` was absent.
+- T01: historical actuals rescored from nflverse stats plus new play-by-play bonus counts; projections rescored from Sleeper stat lines without unprojectable bonuses (mean residual QB 0.002, RB 0.026, WR 0.029, TE -0.017, K 0.104, DEF 0.060).
+- T01: refit P3/P4/P5 and rebuilt P6 (18.271s, deterministic) and P8 (44,880 candidates, 24,184 market passes, 255 WELP passes, 30 trades, 10 waivers, 543.1s). Chalino Sánchez playoff probability 0.7444.
+- T01: milestone tiers use highest-only; stacked mode is implemented and pending Diego confirmation. Trade deadline cutoff, playoff reseeding, and IDP-protection logic added with tests.
+- T01: full suite 85 passed; same-seed reproducibility check passed. Assumption: IDP starter contributes his Yahoo projection weekly (0 on bye). Needs Diego: confirm stacked milestones, paste `available.txt`, approve Yahoo API.
