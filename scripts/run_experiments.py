@@ -7,7 +7,7 @@ import yaml
 
 from ffm.backtest import pinball_crps
 from ffm.distributions import POSITIONS, QuantileModel
-from ffm.experiments import fit_through_origin, lagged_residual_feature
+from ffm.experiments import fit_through_origin, lagged_residual_feature, rolling_origin_split
 
 ROOT = Path("/opt/data/ff-model")
 CACHE = ROOT / "data/cache"
@@ -28,16 +28,14 @@ def mean_crps(model, test):
 
 
 def baseline_result(frame, season):
-    train = frame.filter((pl.col("season") < season) & pl.col("played"))
-    test = frame.filter((pl.col("season") == season) & pl.col("played"))
+    train, test = rolling_origin_split(frame.filter(pl.col("played")), season)
     model = QuantileModel.fit(train, k=500, smooth=9)
     return mean_crps(model, test)
 
 
 def slow_consensus(frame, season):
     featured = lagged_residual_feature(frame)
-    train = featured.filter((pl.col("season") < season) & pl.col("played"))
-    test = featured.filter((pl.col("season") == season) & pl.col("played"))
+    train, test = rolling_origin_split(featured.filter(pl.col("played")), season)
     x = np.clip(train.get_column("residual_last3").fill_null(0).to_numpy(), -3, 3)
     target = train.get_column("residual").to_numpy()
     coefficient = fit_through_origin(x, target)
@@ -72,8 +70,7 @@ def qb_efficiency_feature(frame, stats):
 
 def qb_efficiency(frame, stats, season):
     featured = qb_efficiency_feature(frame, stats)
-    train = featured.filter((pl.col("season") < season) & pl.col("played"))
-    test = featured.filter((pl.col("season") == season) & pl.col("played"))
+    train, test = rolling_origin_split(featured.filter(pl.col("played")), season)
     source = train.filter(pl.col("pos").is_in(["WR", "TE"])).get_column("qb_epa_last4").drop_nulls()
     mean = float(source.mean())
     std = float(source.std())

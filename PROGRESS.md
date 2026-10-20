@@ -92,3 +92,5 @@
 - Hurts-override P8 rerun: 37,125 candidates, 19,648 market passes, 323 WELP passes, 30 confirmed trades, 10 waivers; runtime 466.183s.
 - Overnight Step 0: refreshed 2026 nflverse and Sleeper sources; completed weeks remain 1-6; rebuilt 43,076 player-weeks with 96.9689% scoring agreement.
 - Overnight baseline frozen in reports/baseline_overnight.json: 24 position-period calibration rows, 14,400 matchup pairs, P6 19.513s, P8 466.183s, 54 tests.
+- A1: all 196 FantasyCalc rows matched current Sleeper IDs; no unmatched top-100 player and no join fix required.
+- A2: audited distribution, rolling, QB, copula, matchup, and availability fits; no leakage found. Added a shared pre-season split guard and regression test; 55 tests pass.

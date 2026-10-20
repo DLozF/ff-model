@@ -2,6 +2,11 @@ import numpy as np
 import polars as pl
 
 
+def rolling_origin_split(frame: pl.DataFrame, season: int) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """Split training rows strictly before a test season."""
+    return frame.filter(pl.col("season") < season), frame.filter(pl.col("season") == season)
+
+
 def lagged_residual_feature(frame: pl.DataFrame) -> pl.DataFrame:
     """Add a past-only mean residual over the previous three games."""
     return (

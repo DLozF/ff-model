@@ -7,6 +7,7 @@ from scipy.stats import norm
 from ffm.backtest import matchup_metrics, paired_cluster_bootstrap
 from ffm.copula import repair_correlation
 from ffm.distributions import QuantileModel
+from ffm.experiments import rolling_origin_split
 from fit_copula import fit_sigma
 
 ROOT = Path("/opt/data/ff-model")
@@ -113,8 +114,7 @@ def predict_pair(model, sigma, slots, lineup_a, lineup_b, rng, worlds=2000):
 
 def run_season(frame, season, seed):
     """Run one leakage-safe season matchup backtest."""
-    train = frame.filter((pl.col("season") < season) & pl.col("played"))
-    test = frame.filter((pl.col("season") == season) & pl.col("played"))
+    train, test = rolling_origin_split(frame.filter(pl.col("played")), season)
     model = QuantileModel.fit(train, k=500, smooth=9)
     schedules = pl.read_parquet(CACHE / "nflverse_schedules.parquet")
     sigma, _ = fit_sigma(train, model, schedules)
