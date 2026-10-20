@@ -3,6 +3,9 @@ from pathlib import Path
 
 import numpy as np
 import polars as pl
+from scipy.optimize import minimize
+
+from ffm.backtest import pinball_crps
 
 LEVELS = np.arange(0.005, 1.0, 0.005)
 POSITIONS = ("QB", "RB", "WR", "TE", "K", "DEF")
@@ -116,6 +119,81 @@ class QuantileModel:
             for position in archive["positions"]
         }
         return cls(archive["levels"], tables)
+
+
+def apply_bias_scale(
+    projection: np.ndarray,
+    quantiles: np.ndarray,
+    bias: float,
+    scale: float,
+    floor: float,
+) -> np.ndarray:
+    """Apply Q(u|p) = p + b + s*r_u(p), retaining the position floor."""
+    projection = np.asarray(projection, dtype=float).reshape(-1, 1)
+    adjusted = projection + bias + scale * (np.asarray(quantiles) - projection)
+    adjusted = np.maximum(floor, adjusted)
+    return np.maximum.accumulate(adjusted, axis=1)
+
+
+def fit_bias_scale(
+    projection: np.ndarray,
+    actual: np.ndarray,
+    quantiles: np.ndarray,
+    levels: np.ndarray,
+    floor: float,
+    prior_weight: int = 200,
+) -> dict[str, float | int]:
+    """Fit CRPS-optimal bias/spread, then shrink toward b=0 and s=1."""
+    projection = np.asarray(projection, dtype=float)
+    actual = np.asarray(actual, dtype=float)
+    quantiles = np.asarray(quantiles, dtype=float)
+    n = actual.size
+    if n == 0:
+        return {
+            "n": 0, "weight": 0.0, "raw_bias": 0.0, "raw_scale": 1.0,
+            "bias": 0.0, "scale": 1.0, "objective": float("nan"),
+        }
+
+    def objective(parameters: np.ndarray) -> float:
+        bias, log_scale = parameters
+        adjusted = apply_bias_scale(
+            projection, quantiles, float(bias), float(np.exp(log_scale)), floor
+        )
+        return float(pinball_crps(actual, adjusted, levels).mean())
+
+    fitted = minimize(
+        objective,
+        np.array([0.0, 0.0]),
+        method="Powell",
+        bounds=[(-20.0, 20.0), (np.log(0.1), np.log(4.0))],
+        options={"xtol": 1e-4, "ftol": 1e-7},
+    )
+    raw_bias = float(fitted.x[0])
+    raw_scale = float(np.exp(fitted.x[1]))
+    weight = n / (n + prior_weight)
+    bias = weight * raw_bias
+    scale = 1.0 + weight * (raw_scale - 1.0)
+    return {
+        "n": int(n), "weight": float(weight), "raw_bias": raw_bias,
+        "raw_scale": raw_scale, "bias": float(bias), "scale": float(scale),
+        "objective": float(fitted.fun),
+    }
+
+
+def previous_completed_weeks(
+    frame: pl.DataFrame, season: int, week: int, window: int = 8
+) -> list[tuple[int, int]]:
+    """Return only completed week keys strictly before the target week."""
+    current = season * 100 + week
+    rows = (
+        frame.select("season", "week")
+        .unique()
+        .with_columns((pl.col("season") * 100 + pl.col("week")).alias("key"))
+        .filter(pl.col("key") < current)
+        .sort("key")
+        .tail(window)
+    )
+    return [(int(row[0]), int(row[1])) for row in rows.select("season", "week").iter_rows()]
 
 
 def _rolling_mean(values: np.ndarray, width: int) -> np.ndarray:

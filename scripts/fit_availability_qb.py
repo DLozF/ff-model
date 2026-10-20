@@ -5,7 +5,12 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
-from ffm.availability import DEFAULTS, estimate_markov, status_play_probabilities
+from ffm.availability import (
+    DEFAULTS,
+    estimate_markov,
+    injury_status_outcomes,
+    status_play_probabilities,
+)
 from ffm.ids import NFL_TEAMS, normalize_team
 from ffm.qb import regress_beta
 
@@ -29,19 +34,6 @@ def bye_weeks(schedules):
             }
             result.update((season, week, team) for team in NFL_TEAMS - active)
     return result
-
-
-def injury_status_rows(player_weeks, injuries):
-    """Join final weekly injury status to player outcomes."""
-    final = (
-        injuries.filter(pl.col("season").is_between(2021, 2025))
-        .sort("date_modified")
-        .group_by("season", "week", "gsis_id")
-        .agg(pl.col("report_status").last())
-    )
-    return player_weeks.filter(
-        pl.col("season").is_between(2021, 2025), pl.col("pos").is_in(POSITIONS)
-    ).join(final, on=["season", "week", "gsis_id"], how="left")
 
 
 def apply_sanity(markov, status):
@@ -126,13 +118,77 @@ def qb_effects(frame):
     return result
 
 
+def write_report(availability):
+    """Record raw P4 sanity estimates, sample sizes, and default decisions."""
+    lines = [
+        "# Availability calibration",
+        "",
+        "The original injury join used the projection-based player-week table as the left side, excluding most `Out` players. The corrected join starts from every final injury designation and determines participation from nflverse stats, snap counts, and observed player weeks.",
+        "",
+        "## Markov sanity checks",
+        "",
+        "| Pos | h estimate | h n | h check | h used | r estimate | r n | r check | r used |",
+        "|---|---:|---:|---|---:|---:|---:|---|---:|",
+    ]
+    for position, values in availability["markov"].items():
+        h_raw = values.get("h_raw", values["h"])
+        r_raw = values.get("r_raw", values["r"])
+        h_ok = h_raw is not None and 0.01 < h_raw < 0.2
+        r_ok = r_raw is not None and 0.1 < r_raw < 0.9
+        lines.append(
+            f"| {position} | {h_raw if h_raw is not None else 'NA'} | {values['h_n']} | "
+            f"{'pass' if h_ok else 'FAIL'} | {values['h']:.6f} | "
+            f"{r_raw if r_raw is not None else 'NA'} | {values['r_n']} | "
+            f"{'pass' if r_ok else 'FAIL'} | {values['r']:.6f} |"
+        )
+    lines.extend([
+        "",
+        "## Injury-status sanity checks",
+        "",
+        "| Status | Estimate | N | Check | Value used |",
+        "|---|---:|---:|---|---:|",
+    ])
+    for label, values in availability["status_play_probability"].items():
+        raw = values.get("raw_probability", values["probability"])
+        if label == "Out":
+            ok = raw is not None and raw < 0.05
+            check = "P(play) < 0.05"
+        elif label == "Questionable":
+            ok = raw is not None and 0.5 < raw < 0.95
+            check = "0.5 < P(play) < 0.95"
+        else:
+            ok = True
+            check = "not gated"
+        lines.append(
+            f"| {label} | {raw if raw is not None else 'NA'} | {values.get('n', 0)} | "
+            f"{check}: {'pass' if ok else 'FAIL'} | {values['probability']:.6f} |"
+        )
+    lines.extend([
+        "",
+        "## Assumptions/defaults",
+        "",
+        *[f"- {item}" for item in availability["assumptions"]],
+    ])
+    (ROOT / "reports/availability.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def main():
     frame = pl.read_parquet(CACHE / "player_weeks.parquet")
     schedules = pl.read_parquet(CACHE / "nflverse_schedules.parquet")
     injuries = pl.read_parquet(CACHE / "nflverse_injuries.parquet")
+    stats = pl.read_parquet(CACHE / "nflverse_player_stats.parquet")
+    snaps = pl.read_parquet(CACHE / "nflverse_snap_counts.parquet")
+    ids = pl.read_parquet(CACHE / "nflverse_ff_playerids.parquet")
     training = frame.filter(pl.col("season").is_between(2021, 2025))
     markov = estimate_markov(training, bye_weeks(schedules), POSITIONS)
-    status = status_play_probabilities(injury_status_rows(training, injuries))
+    status_rows = injury_status_outcomes(
+        training,
+        injuries.filter(pl.col("season").is_between(2021, 2025)),
+        stats.filter(pl.col("season").is_between(2021, 2025)),
+        snaps.filter(pl.col("season").is_between(2021, 2025)),
+        ids,
+    )
+    status = status_play_probabilities(status_rows)
     assumptions = apply_sanity(markov, status)
     availability = {
         "markov": markov,
@@ -143,6 +199,7 @@ def main():
     effects = qb_effects(training)
     (ROOT / "models/availability.json").write_text(json.dumps(availability, indent=2), encoding="utf-8")
     (ROOT / "models/qb_effect.json").write_text(json.dumps(effects, indent=2), encoding="utf-8")
+    write_report(availability)
     print(json.dumps(availability, indent=2))
     print(json.dumps(effects, indent=2))
 

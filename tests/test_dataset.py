@@ -49,3 +49,26 @@ def test_zero_stat_placeholder_is_not_marked_played():
     )
 
     assert result.get_column("played").to_list() == [False]
+
+
+def test_snap_without_actual_stats_is_not_marked_played():
+    projections = pl.DataFrame({
+        "season": [2026], "week": [6], "player_id": ["2"], "name": ["Two"],
+        "position": ["RB"], "team": ["SEA"], "opponent": ["ARI"], "pts_ppr": [8.0],
+    })
+    stats = pl.DataFrame(schema={"season": pl.Int64, "week": pl.Int64, "player_id": pl.String})
+    players = pl.DataFrame({
+        "player_id": ["2"], "gsis_id": ["g2"], "full_name": ["Two"],
+        "position": ["RB"], "team": ["SEA"],
+    })
+    ids = pl.DataFrame({"pfr_id": ["p2"], "sleeper_id": ["2"]})
+    snaps = pl.DataFrame({
+        "season": [2026], "week": [6], "pfr_player_id": ["p2"],
+        "offense_snaps": [20.0], "defense_snaps": [0.0], "st_snaps": [0.0],
+    })
+
+    result = build_player_weeks(
+        projections, stats, players, ids, snaps, load_config()["scoring"]
+    )
+
+    assert result.get_column("played").to_list() == [False]

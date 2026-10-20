@@ -6,8 +6,8 @@
 | P0 | done | 1 test passed; nflreadpy, pulp, polars import successfully |
 | P1 | done | 35,741 training rows; score match 96.93%; 2026 projections through week 18 |
 | P2 | done | Greedy matched integer program on 1,000 random rosters |
-| P3 | blocked | Model/report saved; strict per-season coverage/CRPS gate failed after required retry |
-| P4 | done | Availability sanity checks pass with declared defaults; QB effect defaults used |
+| P3 | blocked | Rolling b/s candidate improved CRPS in 3/4 seasons but failed strict coverage; not adopted |
+| P4 | done | Injury join and missing-week Markov bugs fixed; only DEF h/r defaults remain |
 | P5 | done | QB1-WR1 r=0.3137; held-out stack variance ratio=1.1415 |
 | P6 | done | 5,000 worlds + season in 19.450s; playoff/champion sums exact |
 | P7 | done | Empty/clone zero; AJ Barner for Christian McCaffrey => ACCEPT |
@@ -20,13 +20,13 @@
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
 - Sleeper's Rotowire `pts_ppr` projection is the pregame projection source.
 - `pulp_lineup` uses SciPy's MILP backend because installed PuLP 4.1 has no available solver binary.
-- P4 empirical miss/recovery and injury-status estimates failed sanity checks, so the documented position/status defaults were used.
+- P4 corrected empirical h/r estimates are used for QB/RB/WR/TE/K; DEF h/r and r_IR retain documented defaults.
 - Historical IR transitions were unavailable; r_IR=0.25. QB replacement sample was 0, so kappa=0.75 and beta defaults WR/TE=0.6, RB=0.3.
 - P8 used raw post-trade roster WELP as a fast pre-screen, then applied exact roster balancing and WELP before full confirmation.
 - Yahoo Fantasy API access currently requires manual approval before OAuth app use; setup documentation includes the approval step.
 
 ## Blocked
-- P3 calibration gate: K=500/smoothing=9 retry still failed. Largest 2026 misses include TE 50% coverage=0.315, K 95%=0.841; DEF 2023 CRPS 3.216 vs Normal 3.150. Full results: reports/calibration.md.
+- P3 calibration gate: after removing incomplete 2026 week-6 zero outcomes, the rolling eight-week b/s candidate improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025, and still failed the every-position coverage gate. It was not adopted. Full results: reports/calibration.md.
 - P9 calibration gate: copula Brier beat independent overall (0.219201 vs 0.219208) and stacked (0.217772 vs 0.217796), but stacked worst equal-count bin error was 0.065119 (>0.05). Overall worst bin was 0.025570.
 
 ## Log
@@ -59,3 +59,9 @@
 - P10 check: saved fake Yahoo JSON produced correct settings/rosters; full suite 32 passed. No Yahoo login attempted.
 - P11: E1 improvements were 0.166%, 0.126%, -0.089%; E2 improvements were 0.009%, 0.001%, -0.005%.
 - P11 checks: neither experiment met the 1% in 2-of-3 rule, E3 was inapplicable, all experiment flags remain off; 35 tests passed.
+- P3 root cause: 2026 week 6 had projections and snap counts but no Sleeper actual-stat payload; snap-only rows were incorrectly marked played with zero points. Dataset logic now requires an actual-stat row before snap evidence can mark a player played.
+- P3 rolling candidate: per-position b/s was fit by CRPS on only the prior eight completed weeks, including late prior seasons, then shrunk by n/(n+200). CRPS improved in 3/4 seasons, but strict coverage failed, so no P6/P7/P9 reruns were triggered.
+- P3 audit: all weekly b/s estimates, shrinkage weights, sample sizes, and exact prior-week keys are logged in logs/p3-rolling-parameters.json.
+- P4 root causes: the injury join started from projection rows, excluding most Out players, and Markov estimation ignored absent middle weeks. Both were corrected before reevaluating defaults.
+- P4 corrected estimates: Out P(play)=0.001757 (n=1,707), Questionable=0.653141 (n=2,292); both pass. QB/RB/WR/TE/K h and r pass. DEF h=0.0 (n=2,396) and r unavailable (n=0) fail and use defaults 0.02/0.80. Full details: reports/availability.md.
+- P3/P4 regression suite after fixes: 41 passed in 8.94s.

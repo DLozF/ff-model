@@ -1,7 +1,12 @@
 import numpy as np
 import polars as pl
 
-from ffm.distributions import QuantileModel
+from ffm.distributions import (
+    QuantileModel,
+    apply_bias_scale,
+    fit_bias_scale,
+    previous_completed_weeks,
+)
 
 
 def test_quantile_model_is_monotone_and_interpolates():
@@ -36,3 +41,40 @@ def test_model_round_trip_npz(tmp_path):
 
     assert np.array_equal(loaded.levels, model.levels)
     assert np.allclose(loaded.tables["QB"].quantiles, model.tables["QB"].quantiles)
+
+
+def test_apply_bias_scale_preserves_floor_and_monotonicity():
+    base = np.array([[2.0, 5.0, 8.0]])
+
+    adjusted = apply_bias_scale(
+        projection=np.array([5.0]), quantiles=base, bias=-4.0, scale=2.0, floor=0.0
+    )
+
+    assert np.allclose(adjusted, [[0.0, 1.0, 7.0]])
+    assert np.all(np.diff(adjusted, axis=1) >= 0)
+
+
+def test_fit_bias_scale_shrinks_toward_identity():
+    projection = np.full(400, 10.0)
+    base = np.tile(np.array([8.0, 10.0, 12.0]), (400, 1))
+    actual = np.tile(np.array([8.0, 12.0, 16.0, 12.0]), 100)
+    levels = np.array([0.25, 0.50, 0.75])
+
+    result = fit_bias_scale(projection, actual, base, levels, floor=0.0, prior_weight=200)
+
+    assert result["n"] == 400
+    assert result["weight"] == 400 / 600
+    assert result["bias"] != result["raw_bias"]
+    assert abs(result["bias"]) < abs(result["raw_bias"])
+    assert abs(result["scale"] - 1) < abs(result["raw_scale"] - 1)
+
+
+def test_previous_completed_weeks_crosses_seasons_without_leakage():
+    frame = pl.DataFrame({
+        "season": [2025, 2025, 2025, 2026, 2026],
+        "week": [16, 17, 18, 1, 2],
+    })
+
+    weeks = previous_completed_weeks(frame, season=2026, week=2, window=3)
+
+    assert weeks == [(2025, 17), (2025, 18), (2026, 1)]
