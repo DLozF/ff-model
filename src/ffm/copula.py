@@ -1,4 +1,21 @@
 import numpy as np
+from scipy.stats import norm, t
+
+
+def copula_uniforms(
+    base: np.ndarray,
+    factor: np.ndarray,
+    df: int | None = None,
+    chi_square: np.ndarray | None = None,
+) -> np.ndarray:
+    """Transform common normal draws into Gaussian or t-copula uniforms."""
+    latent = np.asarray(base) @ np.asarray(factor).T
+    if df is None:
+        return norm.cdf(latent)
+    if chi_square is None:
+        raise ValueError("chi_square draws are required for a t-copula")
+    scaled = latent / np.sqrt(np.asarray(chi_square)[:, None] / df)
+    return t.cdf(scaled, df=df)
 
 
 def pairwise_correlation(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

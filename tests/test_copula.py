@@ -1,6 +1,8 @@
 import numpy as np
 
-from ffm.copula import pairwise_correlation, repair_correlation
+from scipy.stats import norm, t
+
+from ffm.copula import copula_uniforms, pairwise_correlation, repair_correlation
 
 
 def test_pairwise_correlation_counts_complete_pairs():
@@ -19,3 +21,14 @@ def test_repair_correlation_is_positive_definite():
     assert np.allclose(repaired, repaired.T)
     assert np.allclose(np.diag(repaired), 1)
     assert np.linalg.eigvalsh(repaired).min() > 0
+
+
+def test_t_copula_uniforms_use_shared_chi_square_scale():
+    base = np.array([[1.0, -1.0]])
+    factor = np.eye(2)
+
+    gaussian = copula_uniforms(base, factor)
+    heavy = copula_uniforms(base, factor, df=6, chi_square=np.array([3.0]))
+
+    assert np.allclose(gaussian, norm.cdf(base))
+    assert np.allclose(heavy, t.cdf(base / np.sqrt(3.0 / 6.0), df=6))

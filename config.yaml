@@ -78,3 +78,4 @@ experiments:
   matchup: false
   vegas_totals: false
   role_change: false
+  t_copula: false

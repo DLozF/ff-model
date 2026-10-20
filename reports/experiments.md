@@ -56,3 +56,12 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Test periods: 2023, 2024, 2025, and completed 2026 weeks.
 - Adoption threshold: >=1% CRPS improvement in at least 3 of 4 periods and no period worse by >1%.
 - Result: rejected. RB/WR/TE CRPS improvements were 0.019% (2023), -0.003% (2024), -0.031% (2025), and -0.003% (2026). Feature coverage was 1,051/5,294, 1,161/5,340, 1,087/5,300, and 0/1,817 rows; no completed 2026 week yet has six prior 2026 weeks.
+
+## E7 Heavier-tailed copula — preregistered
+
+- Hypothesis: a t-copula better captures joint tail outcomes in stacked lineups than the Gaussian copula.
+- Exact change: retain the fitted correlation matrix but sample multivariate t latent variables; compare 6 and 10 degrees of freedom. Choose on mean stacked Brier for 2023-2024, then evaluate the chosen df on 2025-2026.
+- Metrics: stacked Brier (adoption metric) and stack variance ratio distance from 1 (diagnostic).
+- Test periods: selection 2023-2024; held-out confirmation 2025 and completed 2026 weeks.
+- Adoption threshold: >=1% stacked-Brier improvement in at least 3 of 4 periods and no period worse by >1%.
+- Result: rejected. t10 was selected over t6 on 2023-2024, but versus Gaussian its stacked-Brier changes were -0.069% (2023), +0.081% (2024), -0.279% (2025), and -0.124% (2026 weeks 1-5; week 6 had no valid stacked lineup). Held-out 2025 stack variance ratio moved away from 1, 1.15008→1.15053.
