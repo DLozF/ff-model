@@ -1,6 +1,6 @@
 import numpy as np
 
-from ffm.lineup import greedy, pulp_lineup
+from ffm.lineup import greedy, pulp_lineup, risk_tiebreak
 
 
 def test_greedy_handles_bye_injury_and_flex():
@@ -35,3 +35,9 @@ def test_greedy_matches_pulp_on_1000_random_rosters():
     ])
 
     assert np.max(np.abs(greedy_totals - pulp_totals)) < 1e-6
+
+
+def test_risk_tiebreak_only_uses_variance_inside_half_point():
+    assert risk_tiebreak(np.array([10.0, 9.4]), np.array([1.0, 9.0]), True) == 0
+    assert risk_tiebreak(np.array([10.0, 9.6]), np.array([1.0, 9.0]), True) == 1
+    assert risk_tiebreak(np.array([10.0, 9.6]), np.array([1.0, 9.0]), False) == 0

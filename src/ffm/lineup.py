@@ -5,6 +5,18 @@ STARTERS = {"QB": 1, "RB": 2, "WR": 2, "TE": 1, "K": 1, "DEF": 1}
 FLEX = {"RB", "WR", "TE"}
 
 
+def risk_tiebreak(projections, variances, underdog: bool, tolerance: float = 0.5) -> int:
+    """Choose by projection unless candidates are close enough for a variance tiebreak."""
+    projections = np.asarray(projections, dtype=float)
+    variances = np.asarray(variances, dtype=float)
+    best = int(np.argmax(projections))
+    close = np.flatnonzero(projections >= projections[best] - tolerance)
+    if close.size <= 1:
+        return best
+    key = variances[close]
+    return int(close[np.argmax(key) if underdog else np.argmin(key)])
+
+
 def _take_best(
     projections: np.ndarray,
     eligible: np.ndarray,

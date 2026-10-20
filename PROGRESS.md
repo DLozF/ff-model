@@ -102,3 +102,4 @@
 - E7 rejected: selected t10 stacked-Brier changes were -0.069%/+0.081%/-0.279%/-0.124%; 2025 stack variance ratio worsened 1.15008 to 1.15053.
 - E8 rejected: no-shrink and 0.2-shrink stacked-Brier changes stayed within -0.038% to +0.079%, far below 1%; no-shrink improved the 2025 stack ratio to 1.109 but failed the adoption metric.
 - E9 added: trade reports now include a score-spread/QB-availability stress verdict and label changed verdicts FRAGILE; the P7 sample remained ACCEPT/ROBUST.
+- E10 rejected: variance tiebreak win-rate changes were -0.319%/-0.561%/-0.745%/-2.372%, and it left more hindsight points on the bench in every period.

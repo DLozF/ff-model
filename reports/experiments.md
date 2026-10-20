@@ -74,3 +74,12 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Test periods: 2023, 2024, 2025, and completed 2026 weeks.
 - Adoption threshold: >=1% stacked-Brier improvement versus current 0.9/0.1 in at least 3 of 4 periods and no period worse by >1%.
 - Result: rejected. Relative to current 0.9/0.1, no-shrink Brier changes were -0.009%, -0.004%, -0.012%, and +0.079%; 0.8/0.2 changes were +0.009%, +0.024%, -0.038%, and +0.020%. No period reached 1%. In the 2025 stack diagnostic, variance ratios were 1.109 (no shrink), 1.141 (current), and 1.176 (0.2 shrink); the variance gain alone does not satisfy the Brier adoption rule.
+
+## E10 Risk-sensitive lineup tiebreak — preregistered
+
+- Hypothesis: among players within 0.5 projected points, choosing higher variance for an underdog and lower variance for a favorite improves realized matchup win rate.
+- Exact change: keep the higher projection when the gap exceeds 0.5; otherwise use model score variance as the tiebreak according to projected favorite status.
+- Metrics: realized matchup win rate (adoption metric) and hindsight candidate points left on the bench.
+- Test periods: 2023, 2024, 2025, and completed 2026 weeks.
+- Adoption threshold: >=1% win-rate improvement in at least 3 of 4 periods and no period worse by >1%.
+- Result: rejected. Relative win-rate changes were -0.319% (2023), -0.561% (2024), -0.745% (2025), and -2.372% (2026). Mean hindsight points left on the bench increased from 10.305→10.462, 10.369→10.388, 10.717→10.843, and 11.346→11.382.
