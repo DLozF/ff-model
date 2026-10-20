@@ -17,10 +17,10 @@ The original injury join used the projection-based player-week table as the left
 
 | Status | Estimate | N | Check | Value used |
 |---|---:|---:|---|---:|
-| Questionable | 0.6531413612565445 | 2292 | 0.5 < P(play) < 0.95: pass | 0.653141 |
 | none | 0.9831198906280517 | 35841 | not gated: pass | 0.983120 |
-| Doubtful | 0.0036363636363636364 | 275 | not gated: pass | 0.003636 |
 | Out | 0.0017574692442882249 | 1707 | P(play) < 0.05: pass | 0.001757 |
+| Questionable | 0.6531413612565445 | 2292 | 0.5 < P(play) < 0.95: pass | 0.653141 |
+| Doubtful | 0.0036363636363636364 | 275 | not gated: pass | 0.003636 |
 | Note | 1.0 | 2 | not gated: pass | 1.000000 |
 
 ## Assumptions/defaults

@@ -40,21 +40,21 @@
     }
   },
   "status_play_probability": {
-    "Questionable": {
-      "probability": 0.6531413612565445,
-      "n": 2292
-    },
     "none": {
       "probability": 0.9831198906280517,
       "n": 35841
     },
-    "Doubtful": {
-      "probability": 0.0036363636363636364,
-      "n": 275
-    },
     "Out": {
       "probability": 0.0017574692442882249,
       "n": 1707
+    },
+    "Questionable": {
+      "probability": 0.6531413612565445,
+      "n": 2292
+    },
+    "Doubtful": {
+      "probability": 0.0036363636363636364,
+      "n": 275
     },
     "Note": {
       "probability": 1.0,

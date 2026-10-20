@@ -94,3 +94,5 @@
 - Overnight baseline frozen in reports/baseline_overnight.json: 24 position-period calibration rows, 14,400 matchup pairs, P6 19.513s, P8 466.183s, 54 tests.
 - A1: all 196 FantasyCalc rows matched current Sleeper IDs; no unmatched top-100 player and no join fix required.
 - A2: audited distribution, rolling, QB, copula, matchup, and availability fits; no leakage found. Added a shared pre-season split guard and regression test; 55 tests pass.
+- A3: K beat Normal CRPS in all four periods. DEF lost only in 2023 (3.216 vs 3.150); a simpler empirical residual model still lost there and was rejected.
+- A4: injury outcomes join on exact season/week/gsis_id. All sanity gates pass; Out n=1,707 at 0.001757 and Questionable n=2,292 at 0.653141.
