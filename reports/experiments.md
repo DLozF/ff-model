@@ -47,3 +47,12 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Test periods: 2023, 2024, 2025, and completed 2026 weeks.
 - Adoption threshold: >=1% CRPS improvement in at least 3 of 4 periods and no period worse by >1%.
 - Result: rejected. CRPS improvements were 0.719% (2023), 0.094% (2024), -0.009% (2025), and 0.036% (2026); no period reached 1%. QB 80% coverage moved 79.6%→79.6%, 79.9%→78.0%, 78.1%→78.0%, and 71.9%→72.4%.
+
+## E6 Role change — preregistered
+
+- Hypothesis: recent changes in offensive snap share improve RB/WR/TE projection accuracy.
+- Exact change: for each player-week, compute mean offensive snap share over weeks t-2..t-1 minus weeks t-6..t-3; fit one past-only coefficient per RB/WR/TE and adjust projections.
+- Metric: sample-weighted CRPS across RB, WR, and TE.
+- Test periods: 2023, 2024, 2025, and completed 2026 weeks.
+- Adoption threshold: >=1% CRPS improvement in at least 3 of 4 periods and no period worse by >1%.
+- Result: rejected. RB/WR/TE CRPS improvements were 0.019% (2023), -0.003% (2024), -0.031% (2025), and -0.003% (2026). Feature coverage was 1,051/5,294, 1,161/5,340, 1,087/5,300, and 0/1,817 rows; no completed 2026 week yet has six prior 2026 weeks.

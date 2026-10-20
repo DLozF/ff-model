@@ -43,6 +43,30 @@ def add_vegas_feature(frame: pl.DataFrame, implied: pl.DataFrame) -> pl.DataFram
     )
 
 
+def role_change_features(snaps: pl.DataFrame, mapping: pl.DataFrame) -> pl.DataFrame:
+    """Compute prior-two minus prior-four snap share without same-week leakage."""
+    joined = (
+        snaps.select("season", "week", "pfr_player_id", "offense_pct")
+        .join(mapping.select("pfr_id", "gsis_id"), left_on="pfr_player_id", right_on="pfr_id")
+        .sort("season", "gsis_id", "week")
+    )
+    rows = []
+    for group in joined.partition_by(["season", "gsis_id"], maintain_order=True):
+        season = group.item(0, "season")
+        gsis_id = group.item(0, "gsis_id")
+        shares = dict(zip(group["week"].to_list(), group["offense_pct"].to_list()))
+        for week in group["week"].to_list():
+            recent = [shares[w] for w in range(week - 2, week) if w in shares]
+            prior = [shares[w] for w in range(week - 6, week - 2) if w in shares]
+            delta = None
+            if len(recent) == 2 and len(prior) == 4:
+                delta = round(float(np.mean(recent) - np.mean(prior)), 12)
+            rows.append({"season": season, "week": week, "gsis_id": gsis_id, "role_delta": delta})
+    return pl.DataFrame(rows, schema={
+        "season": pl.Int64, "week": pl.Int64, "gsis_id": pl.String, "role_delta": pl.Float64,
+    })
+
+
 def fit_position_coefficients(
     frame: pl.DataFrame, feature: str, positions: tuple[str, ...]
 ) -> dict[str, float]:
