@@ -90,3 +90,5 @@
 - Overnight safety: created tag `pre-overnight-2026-10-20` and branch `overnight-2026-10-20`; summary saved to reports/overnight_summary.md.
 - Jalen Hurts override resolved to rest of season; P6 rebuilt in 19.513s and all 55,000 saved availability cells are false.
 - Hurts-override P8 rerun: 37,125 candidates, 19,648 market passes, 323 WELP passes, 30 confirmed trades, 10 waivers; runtime 466.183s.
+- Overnight Step 0: refreshed 2026 nflverse and Sleeper sources; completed weeks remain 1-6; rebuilt 43,076 player-weeks with 96.9689% scoring agreement.
+- Overnight baseline frozen in reports/baseline_overnight.json: 24 position-period calibration rows, 14,400 matchup pairs, P6 19.513s, P8 466.183s, 54 tests.

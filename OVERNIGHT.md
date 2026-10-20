@@ -12,7 +12,7 @@ Goal: make the model more accurate and its trade advice more trustworthy, withou
 3. Do not log in to Yahoo. Do not call any paid API. Use only your current model and the free data sources already in PLAN.md and FantasyCalc.
 4. Machine limits: 2 CPU cores, 7.5 GB RAM, shared with Immich. One heavy job at a time. Use n_dev worlds for experiments; use n_final only for the final confirmation run.
 5. Keep tool output short: `pytest -q`, `tail -n 30` on logs, never print whole tables.
-6. Clock: check `TZ=America/Chicago date`. Do not start a new experiment after 07:00 Central. Final summary written by 07:30 Central.
+6. Clock: check `TZ=America/Chicago date`. Do not start a new experiment after 17:00 Central. Final summary written by 18:00 Central.
 7. Stop conditions (write the summary, then end, do not retry in a loop):
    - 3 rate-limit, quota, or auth errors in a row from your model
    - Tests failing that you cannot fix in 3 attempts (revert to the last passing commit first)
