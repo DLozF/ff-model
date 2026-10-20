@@ -148,6 +148,33 @@ def trade_verdict(interval: dict[str, float]) -> str:
     return "NO CLEAR EFFECT"
 
 
+def stress_worlds(points, available, positions, spread_multiplier=1.25):
+    """Widen active-score spread and deterministically thin QB availability."""
+    points = np.asarray(points, dtype=float)
+    stressed_available = np.asarray(available, dtype=bool).copy()
+    stressed_points = np.zeros_like(points, dtype=np.float32)
+    for week in range(points.shape[0]):
+        for player in range(points.shape[2]):
+            active = np.asarray(available[week, :, player], dtype=bool)
+            if np.any(active):
+                center = float(points[week, active, player].mean())
+                stressed_points[week, :, player] = np.maximum(
+                    0.0, center + spread_multiplier * (points[week, :, player] - center)
+                )
+    qb = np.asarray(positions) == "QB"
+    pessimistic_world = np.arange(points.shape[1]) % 7 != 0
+    stressed_available[:, :, qb] &= pessimistic_world[None, :, None]
+    stressed_points *= stressed_available
+    return stressed_points, stressed_available
+
+
+def fragility_label(verdict: str, stress_verdict: str) -> tuple[str, str]:
+    """Label verdict stability under the documented stress case."""
+    if verdict != stress_verdict:
+        return "FRAGILE", f"stress verdict changed from {verdict} to {stress_verdict}"
+    return "ROBUST", "stress verdict unchanged"
+
+
 def evaluate_rosters(
     points, projections, available, positions, rosters, weeks, regular_end, playoff_teams
 ):

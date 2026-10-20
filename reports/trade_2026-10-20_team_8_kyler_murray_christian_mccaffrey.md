@@ -23,6 +23,7 @@
 - Kalif Raymond (WR): V 33, 30-day -35 (-106.1%).
 - Colston Loveland (TE): V 1260, 30-day -1198 (-95.1%).
 - Rome Odunze (WR): V 977, 30-day -884 (-90.5%).
+- Stefon Diggs (WR): V 783, 30-day -687 (-87.7%).
 - Dallas Goedert (TE): V 730, 30-day -600 (-82.2%).
 - Jake Ferguson (TE): V 252, 30-day -185 (-73.4%).
 - TreVeyon Henderson (RB): V 1164, 30-day -780 (-67.0%).
@@ -43,7 +44,6 @@
 - Blake Corum (RB): V 879, 30-day -260 (-29.6%).
 - Luther Burden (WR): V 1692, 30-day -485 (-28.7%).
 - Justin Jefferson (WR): V 6194, 30-day -1751 (-28.3%).
-- Terry McLaurin (WR): V 1456, 30-day -399 (-27.4%).
 - Bucky Irving (RB): V 3320, 30-day -901 (-27.1%).
 - Mike Washington (RB): V 155, 30-day -41 (-26.5%).
 - Harold Fannin (TE): V 670, 30-day -170 (-25.4%).
@@ -55,6 +55,8 @@
 ## Decision
 
 - Verdict for Team 1: **ACCEPT**
+- Stress verdict: **ACCEPT** — **ROBUST** (stress verdict unchanged)
+- Stress case: score spread ×1.25; QB availability thinned by one-seventh.
 - Other-team acceptance: **UNLIKELY**
 - Market ratio r: **0.034**
 - Other team receives V: **275.0**

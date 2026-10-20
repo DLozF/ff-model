@@ -19,8 +19,8 @@ from ffm.market import (
     package_value,
 )
 from ffm.trade import (
-    apply_trade, evaluate_rosters, fuzzy_match, metric_delta, roster_lineup_points,
-    trade_verdict,
+    apply_trade, evaluate_rosters, fragility_label, fuzzy_match, metric_delta,
+    roster_lineup_points, stress_worlds, trade_verdict,
 )
 from ffm.worlds import load_injury_overrides, load_world_directory
 
@@ -68,6 +68,7 @@ def write_report(
     path, league, names, weeks, before, after, summaries, my_team, other_team,
     verdict, acceptance, adjustments, exposure_before, exposure_after, ratio,
     other_receives_value, other_gives_value, news, pending_overrides,
+    stress_verdict, fragility, fragility_reason,
 ):
     """Write a trade decision report."""
     lines = [
@@ -85,6 +86,8 @@ def write_report(
     lines.extend([
         "", "## Decision", "",
         f"- Verdict for {league['teams'][my_team]}: **{verdict}**",
+        f"- Stress verdict: **{stress_verdict}** — **{fragility}** ({fragility_reason})",
+        "- Stress case: score spread ×1.25; QB availability thinned by one-seventh.",
         f"- Other-team acceptance: **{acceptance}**",
         f"- Market ratio r: **{ratio:.3f}**{' — OVERPAY' if ratio > 1.25 else ''}",
         f"- Other team receives V: **{other_receives_value:.1f}**",
@@ -167,6 +170,17 @@ def main():
     }
     criterion = "champion" if before["playoff"][:, my_team].mean() > 0.9 else "playoffs"
     verdict = trade_verdict(summaries[my_team][criterion])
+    stress_points, stress_available = stress_worlds(points, available, positions)
+    stress_before = evaluate_rosters(
+        stress_points, projections, stress_available, positions,
+        league["rosters"], weeks, 14, 6,
+    )
+    stress_after = evaluate_rosters(
+        stress_points, projections, stress_available, positions, updated, weeks, 14, 6,
+    )
+    stress_summary = summarize(stress_before, stress_after, my_team)
+    stress_verdict = trade_verdict(stress_summary[criterion])
+    fragility, fragility_reason = fragility_label(verdict, stress_verdict)
     other_receives_value = package_value(player_values[give])
     other_gives_value = package_value(player_values[get])
     ratio = market_ratio(other_receives_value, other_gives_value)
@@ -186,6 +200,7 @@ def main():
         path, league, names, weeks, before, after, summaries, my_team, other_team,
         verdict, acceptance, adjustments, before_exposure, after_exposure, ratio,
         other_receives_value, other_gives_value, news, pending_overrides,
+        stress_verdict, fragility, fragility_reason,
     )
     print(
         f"Verdict: {verdict}; acceptance: {acceptance}; r={ratio:.3f}; "

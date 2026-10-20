@@ -19,7 +19,8 @@ from ffm.market import (
     write_model_vs_market,
 )
 from ffm.trade import (
-    apply_trade, evaluate_rosters, metric_delta, roster_welp, trade_verdict,
+    apply_trade, evaluate_rosters, fragility_label, metric_delta, roster_welp,
+    stress_worlds, trade_verdict,
 )
 from ffm.worlds import load_injury_overrides, load_world_directory
 
@@ -108,6 +109,10 @@ def main():
                 })
     screened.sort(key=lambda row: row["my_welp"], reverse=True)
     before = evaluate_rosters(points, projections, available, positions, rosters, weeks, 14, 6)
+    stress_points, stress_available = stress_worlds(points, available, positions)
+    stress_before = evaluate_rosters(
+        stress_points, projections, stress_available, positions, rosters, weeks, 14, 6
+    )
     criterion = "champion" if before["playoff"][:, my_team].mean() > 0.9 else "playoffs"
     confirmed = []
     for row in screened[:30]:
@@ -117,9 +122,20 @@ def main():
         mine = paired_summary(before, after, my_team)
         other = paired_summary(before, after, row["other_team"])
         verdict = trade_verdict(mine[criterion])
+        stress_after = evaluate_rosters(
+            stress_points, projections, stress_available, positions,
+            row["rosters"], weeks, 14, 6,
+        )
+        stress_mine = paired_summary(stress_before, stress_after, my_team)
+        stress_verdict = trade_verdict(stress_mine[criterion])
+        fragility, fragility_reason = fragility_label(verdict, stress_verdict)
         acceptance = acceptance_label(row["ratio"])
         if verdict == "ACCEPT":
-            confirmed.append({**row, "mine": mine, "other": other, "verdict": verdict, "acceptance": acceptance})
+            confirmed.append({
+                **row, "mine": mine, "other": other, "verdict": verdict,
+                "acceptance": acceptance, "stress_verdict": stress_verdict,
+                "fragility": fragility, "fragility_reason": fragility_reason,
+            })
     confirmed.sort(key=lambda row: row["mine"][criterion]["mean"], reverse=True)
 
     top_free_agents = sorted(free_agents, key=lambda player: ros[player], reverse=True)[:40]
@@ -155,8 +171,9 @@ def main():
         "", "## Trade results", "",
         f"Screened {candidate_count} trades; {market_pass} passed market r >= 0.90; "
         f"{len(screened)} passed WELP; confirmed top {min(30, len(screened))}.",
-        "", "| Rank | Partner | Give | Get | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Acceptance |",
-        "|---:|---|---|---|---:|---:|---:|---:|---:|---:|---|---|",
+        "", "Stress case: score spread ×1.25; QB availability thinned by one-seventh.",
+        "", "| Rank | Partner | Give | Get | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Stress | Stability | Acceptance |",
+        "|---:|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|",
     ])
     for rank, row in enumerate(confirmed, 1):
         trade_lines.append(
@@ -166,10 +183,11 @@ def main():
             f"{row['other_receives_value']:.1f} | {row['other_gives_value']:.1f} | "
             f"{row['ratio']:.3f}{' OVERPAY' if row['ratio'] > 1.25 else ''} | {row['my_welp']:+.2f} | "
             f"{row['mine'][criterion]['mean']:+.4f} | {row['other']['playoffs']['mean']:+.4f} | "
-            f"{row['verdict']} | {row['acceptance']} |"
+            f"{row['verdict']} | {row['stress_verdict']} | "
+            f"{row['fragility']}: {row['fragility_reason']} | {row['acceptance']} |"
         )
     if not confirmed:
-        trade_lines.append("| - | - | - | - | - | - | - | - | - | - | No qualifying trades | - |")
+        trade_lines.append("| - | - | - | - | - | - | - | - | - | - | No qualifying trades | - | - | - |")
     (ROOT / "reports" / f"trade_ideas_{date}.md").write_text("\n".join(trade_lines) + "\n", encoding="utf-8")
 
     waiver_lines = [
