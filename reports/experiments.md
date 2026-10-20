@@ -25,3 +25,16 @@ Adopted: no
 ## E3 Matchup
 
 Skipped: Sleeper future-week projections were available for every remaining 2026 week through week 18.
+
+## Overnight protocol
+
+Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3 of 4 test periods (2023, 2024, 2025, 2026), with no period worsening by more than 1%. After six overnight experiments, the threshold becomes 2%.
+
+## E4 Vegas totals — preregistered
+
+- Hypothesis: pregame team implied points explain projection residuals and improve conditional score CRPS.
+- Exact change: derive home/away implied points from `total_line` and `spread_line`; subtract the season-week league mean; fit one past-only least-squares coefficient per position. DEF uses the opponent implied points with the coefficient learned on that feature.
+- Metric: sample-weighted CRPS across positions.
+- Test periods: 2023, 2024, 2025, and completed 2026 weeks.
+- Adoption threshold: >=1% CRPS improvement in at least 3 of 4 periods and no period worse by >1%.
+- Result: rejected. CRPS improvements were 0.047% (2023), 0.157% (2024), 0.119% (2025), and 0.175% (2026); zero periods reached 1% and none worsened. Leakage check: maximum training season was S-1 for every test.

@@ -76,3 +76,4 @@ experiments:
   slow_consensus: false
   qb_efficiency: false
   matchup: false
+  vegas_totals: false
