@@ -50,41 +50,41 @@
 
 ## Injury overrides needing Diego's input
 
-- Jalen Hurts: weeks is TBD; override not applied. Note: blood clot.
+- None.
 
 ## Trade results
 
-Screened 37125 trades; 19648 passed market r >= 0.90; 322 passed WELP; confirmed top 30.
+Screened 37125 trades; 19648 passed market r >= 0.90; 323 passed WELP; confirmed top 30.
 
 | Rank | Partner | Give | Get | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Acceptance |
 |---:|---|---|---|---:|---:|---:|---:|---:|---:|---|---|
-| 1 | Team 11 | Joe Burrow, Marvin Harrison | Bhayshul Tuten | 3181.0 | 3349.0 | 0.950 | +34.90 | +0.1254 | -0.0344 | ACCEPT | POSSIBLE |
-| 2 | Team 11 | Marvin Harrison, Jacoby Brissett | Brenton Strange | 1178.0 | 678.0 | 1.737 OVERPAY | +38.29 | +0.1248 | +0.0156 | ACCEPT | LIKELY |
-| 3 | Team 11 | Marvin Harrison, Devaughn Vele | Brenton Strange | 1297.5 | 678.0 | 1.914 OVERPAY | +38.33 | +0.1238 | -0.0194 | ACCEPT | LIKELY |
-| 4 | Team 11 | Marvin Harrison, Kyler Murray | Brenton Strange | 1185.5 | 678.0 | 1.749 OVERPAY | +33.91 | +0.1176 | +0.0364 | ACCEPT | LIKELY |
-| 5 | Team 11 | Devaughn Vele, Jacoby Brissett | Brenton Strange | 629.0 | 678.0 | 0.928 | +35.61 | +0.1168 | +0.0350 | ACCEPT | POSSIBLE |
-| 6 | Team 11 | Joe Burrow, Woody Marks | Bhayshul Tuten | 3197.5 | 3349.0 | 0.955 | +31.93 | +0.1152 | -0.0192 | ACCEPT | POSSIBLE |
-| 7 | Team 11 | Devaughn Vele, Kyler Murray | Brenton Strange | 636.5 | 678.0 | 0.939 | +31.23 | +0.1106 | +0.0566 | ACCEPT | POSSIBLE |
-| 8 | Team 11 | Marvin Harrison, Jacoby Brissett | Harold Fannin | 1178.0 | 670.0 | 1.758 OVERPAY | +30.88 | +0.1104 | +0.0108 | ACCEPT | LIKELY |
-| 9 | Team 8 | Isaiah Likely, Kyler Murray | George Kittle | 2840.5 | 3097.0 | 0.917 | +35.10 | +0.1098 | -0.0062 | ACCEPT | POSSIBLE |
-| 10 | Team 8 | Isaiah Likely, Jacoby Brissett | George Kittle | 2833.0 | 3097.0 | 0.915 | +39.48 | +0.1088 | -0.0192 | ACCEPT | POSSIBLE |
-| 11 | Team 11 | Woody Marks, Marvin Harrison | Brenton Strange | 1605.0 | 678.0 | 2.367 OVERPAY | +33.86 | +0.1058 | -0.0236 | ACCEPT | LIKELY |
-| 12 | Team 11 | Marvin Harrison, Devaughn Vele | Harold Fannin | 1297.5 | 670.0 | 1.937 OVERPAY | +30.38 | +0.1028 | -0.0168 | ACCEPT | LIKELY |
-| 13 | Team 11 | Zach Charbonnet, Devaughn Vele | Brenton Strange | 1694.5 | 678.0 | 2.499 OVERPAY | +29.73 | +0.1026 | -0.0164 | ACCEPT | LIKELY |
-| 14 | Team 11 | Zach Charbonnet, Jacoby Brissett | Brenton Strange | 1575.0 | 678.0 | 2.323 OVERPAY | +28.94 | +0.0992 | +0.0222 | ACCEPT | LIKELY |
-| 15 | Team 8 | Joe Burrow, Zach Charbonnet | Tetairoa McMillan | 3379.5 | 3733.0 | 0.905 | +38.04 | +0.0984 | -0.0046 | ACCEPT | POSSIBLE |
-| 16 | Team 11 | Marvin Harrison, Jacoby Brissett | Mark Andrews | 1178.0 | 384.0 | 3.068 OVERPAY | +28.93 | +0.0972 | +0.0336 | ACCEPT | LIKELY |
-| 17 | Team 11 | Joe Burrow, Zach Charbonnet | Bhayshul Tuten | 3379.5 | 3349.0 | 1.009 | +31.76 | +0.0940 | -0.0202 | ACCEPT | LIKELY |
-| 18 | Team 11 | Marvin Harrison, Jacoby Brissett | David Montgomery | 1178.0 | 1276.0 | 0.923 | +31.91 | +0.0936 | +0.0042 | ACCEPT | POSSIBLE |
-| 19 | Team 7 | Marvin Harrison, Jacoby Brissett | Ladd McConkey | 1178.0 | 1201.0 | 0.981 | +34.67 | +0.0926 | +0.0076 | ACCEPT | POSSIBLE |
-| 20 | Team 8 | Joe Burrow, Devaughn Vele | DJ Moore | 2906.5 | 1776.0 | 1.637 OVERPAY | +33.57 | +0.0926 | +0.0070 | ACCEPT | LIKELY |
-| 21 | Team 11 | Woody Marks, Jacoby Brissett | Brenton Strange | 1211.0 | 678.0 | 1.786 OVERPAY | +30.37 | +0.0918 | +0.0348 | ACCEPT | LIKELY |
-| 22 | Team 11 | Marvin Harrison, Devaughn Vele | Mark Andrews | 1297.5 | 384.0 | 3.379 OVERPAY | +29.22 | +0.0916 | -0.0042 | ACCEPT | LIKELY |
-| 23 | Team 7 | Marvin Harrison, Kyler Murray | Ladd McConkey | 1185.5 | 1201.0 | 0.987 | +30.29 | +0.0872 | +0.0196 | ACCEPT | POSSIBLE |
-| 24 | Team 11 | Woody Marks, Devaughn Vele | David Montgomery | 1330.5 | 1276.0 | 1.043 | +30.05 | +0.0872 | -0.0164 | ACCEPT | LIKELY |
-| 25 | Team 8 | Joe Burrow, Marvin Harrison | DJ Moore | 3181.0 | 1776.0 | 1.791 OVERPAY | +35.20 | +0.0844 | +0.0038 | ACCEPT | LIKELY |
-| 26 | Team 11 | Joe Burrow, Devaughn Vele | Trevor Lawrence | 2906.5 | 1734.0 | 1.676 OVERPAY | +31.42 | +0.0822 | +0.0078 | ACCEPT | LIKELY |
-| 27 | Team 11 | Joe Burrow, Jacoby Brissett | Trevor Lawrence | 2787.0 | 1734.0 | 1.607 OVERPAY | +31.35 | +0.0812 | +0.0106 | ACCEPT | LIKELY |
-| 28 | Team 7 | Zach Charbonnet, Marvin Harrison | Ladd McConkey | 1969.0 | 1201.0 | 1.639 OVERPAY | +30.44 | +0.0752 | +0.0586 | ACCEPT | LIKELY |
-| 29 | Team 7 | Woody Marks, Marvin Harrison | Ladd McConkey | 1605.0 | 1201.0 | 1.336 OVERPAY | +31.02 | +0.0736 | +0.1024 | ACCEPT | LIKELY |
-| 30 | Team 7 | Woody Marks, Devaughn Vele | Ladd McConkey | 1330.5 | 1201.0 | 1.108 | +29.59 | +0.0726 | +0.1044 | ACCEPT | LIKELY |
+| 1 | Team 11 | Marvin Harrison, Jacoby Brissett | Brenton Strange | 1178.0 | 678.0 | 1.737 OVERPAY | +38.34 | +0.1196 | +0.0196 | ACCEPT | LIKELY |
+| 2 | Team 11 | Marvin Harrison, Devaughn Vele | Brenton Strange | 1297.5 | 678.0 | 1.914 OVERPAY | +38.38 | +0.1190 | -0.0188 | ACCEPT | LIKELY |
+| 3 | Team 11 | Joe Burrow, Marvin Harrison | Bhayshul Tuten | 3181.0 | 3349.0 | 0.950 | +34.96 | +0.1174 | -0.0198 | ACCEPT | POSSIBLE |
+| 4 | Team 11 | Marvin Harrison, Kyler Murray | Brenton Strange | 1185.5 | 678.0 | 1.749 OVERPAY | +33.95 | +0.1146 | +0.0424 | ACCEPT | LIKELY |
+| 5 | Team 8 | Isaiah Likely, Jacoby Brissett | George Kittle | 2833.0 | 3097.0 | 0.915 | +39.44 | +0.1108 | -0.0216 | ACCEPT | POSSIBLE |
+| 6 | Team 8 | Isaiah Likely, Kyler Murray | George Kittle | 2840.5 | 3097.0 | 0.917 | +35.06 | +0.1096 | -0.0066 | ACCEPT | POSSIBLE |
+| 7 | Team 11 | Devaughn Vele, Jacoby Brissett | Brenton Strange | 629.0 | 678.0 | 0.928 | +35.66 | +0.1090 | +0.0386 | ACCEPT | POSSIBLE |
+| 8 | Team 11 | Joe Burrow, Zach Charbonnet | Bhayshul Tuten | 3379.5 | 3349.0 | 1.009 | +31.84 | +0.1070 | -0.0224 | ACCEPT | LIKELY |
+| 9 | Team 11 | Joe Burrow, Woody Marks | Bhayshul Tuten | 3197.5 | 3349.0 | 0.955 | +31.99 | +0.1052 | -0.0072 | ACCEPT | POSSIBLE |
+| 10 | Team 11 | Devaughn Vele, Kyler Murray | Brenton Strange | 636.5 | 678.0 | 0.939 | +31.28 | +0.1040 | +0.0626 | ACCEPT | POSSIBLE |
+| 11 | Team 11 | Woody Marks, Marvin Harrison | Brenton Strange | 1605.0 | 678.0 | 2.367 OVERPAY | +33.91 | +0.1030 | -0.0236 | ACCEPT | LIKELY |
+| 12 | Team 11 | Zach Charbonnet, Devaughn Vele | Brenton Strange | 1694.5 | 678.0 | 2.499 OVERPAY | +29.78 | +0.0974 | -0.0144 | ACCEPT | LIKELY |
+| 13 | Team 11 | Marvin Harrison, Jacoby Brissett | Harold Fannin | 1178.0 | 670.0 | 1.758 OVERPAY | +30.80 | +0.0954 | +0.0200 | ACCEPT | LIKELY |
+| 14 | Team 11 | Zach Charbonnet, Jacoby Brissett | Brenton Strange | 1575.0 | 678.0 | 2.323 OVERPAY | +28.99 | +0.0946 | +0.0224 | ACCEPT | LIKELY |
+| 15 | Team 8 | Joe Burrow, Zach Charbonnet | Tetairoa McMillan | 3379.5 | 3733.0 | 0.905 | +38.17 | +0.0928 | -0.0040 | ACCEPT | POSSIBLE |
+| 16 | Team 11 | Marvin Harrison, Jacoby Brissett | David Montgomery | 1178.0 | 1276.0 | 0.923 | +32.00 | +0.0926 | +0.0106 | ACCEPT | POSSIBLE |
+| 17 | Team 11 | Marvin Harrison, Devaughn Vele | Mark Andrews | 1297.5 | 384.0 | 3.379 OVERPAY | +29.24 | +0.0924 | -0.0052 | ACCEPT | LIKELY |
+| 18 | Team 11 | Marvin Harrison, Devaughn Vele | Harold Fannin | 1297.5 | 670.0 | 1.937 OVERPAY | +30.30 | +0.0920 | -0.0228 | ACCEPT | LIKELY |
+| 19 | Team 7 | Marvin Harrison, Jacoby Brissett | Ladd McConkey | 1178.0 | 1201.0 | 0.981 | +34.86 | +0.0916 | +0.0020 | ACCEPT | POSSIBLE |
+| 20 | Team 11 | Marvin Harrison, Jacoby Brissett | Mark Andrews | 1178.0 | 384.0 | 3.068 OVERPAY | +28.94 | +0.0914 | +0.0362 | ACCEPT | LIKELY |
+| 21 | Team 11 | Woody Marks, Jacoby Brissett | Brenton Strange | 1211.0 | 678.0 | 1.786 OVERPAY | +30.42 | +0.0884 | +0.0326 | ACCEPT | LIKELY |
+| 22 | Team 7 | Marvin Harrison, Kyler Murray | Ladd McConkey | 1185.5 | 1201.0 | 0.987 | +30.48 | +0.0842 | +0.0144 | ACCEPT | POSSIBLE |
+| 23 | Team 11 | Woody Marks, Devaughn Vele | David Montgomery | 1330.5 | 1276.0 | 1.043 | +30.15 | +0.0826 | -0.0110 | ACCEPT | LIKELY |
+| 24 | Team 8 | Joe Burrow, Marvin Harrison | DJ Moore | 3181.0 | 1776.0 | 1.791 OVERPAY | +35.41 | +0.0806 | +0.0094 | ACCEPT | LIKELY |
+| 25 | Team 11 | Joe Burrow, Devaughn Vele | Trevor Lawrence | 2906.5 | 1734.0 | 1.676 OVERPAY | +31.46 | +0.0784 | +0.0086 | ACCEPT | LIKELY |
+| 26 | Team 7 | Zach Charbonnet, Marvin Harrison | Ladd McConkey | 1969.0 | 1201.0 | 1.639 OVERPAY | +30.58 | +0.0752 | +0.0500 | ACCEPT | LIKELY |
+| 27 | Team 11 | Joe Burrow, Jacoby Brissett | Trevor Lawrence | 2787.0 | 1734.0 | 1.607 OVERPAY | +31.39 | +0.0746 | +0.0134 | ACCEPT | LIKELY |
+| 28 | Team 8 | Joe Burrow, Devaughn Vele | DJ Moore | 2906.5 | 1776.0 | 1.637 OVERPAY | +33.72 | +0.0742 | +0.0118 | ACCEPT | LIKELY |
+| 29 | Team 7 | Woody Marks, Devaughn Vele | Ladd McConkey | 1330.5 | 1201.0 | 1.108 | +29.65 | +0.0728 | +0.0898 | ACCEPT | LIKELY |
+| 30 | Team 7 | Woody Marks, Marvin Harrison | Ladd McConkey | 1605.0 | 1201.0 | 1.336 OVERPAY | +31.18 | +0.0694 | +0.0878 | ACCEPT | LIKELY |

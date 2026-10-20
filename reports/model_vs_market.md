@@ -33,11 +33,11 @@ Top 150 players by FantasyCalc redraft value.
 | Wan'Dale Robinson | WR | 560 | 33 | 44 | -11 |
 | Chris Godwin | WR | 362 | 43 | 54 | -11 |
 | Kyler Murray | QB | 275 | 11 | 21 | -10 |
-| Rashee Rice | WR | 2020 | 17 | 25 | -8 |
+| Rashee Rice | WR | 2020 | 16 | 25 | -9 |
 | Xavier Worthy | WR | 536 | 37 | 45 | -8 |
 | Bryce Young | QB | 1096 | 8 | 15 | -7 |
 | Carnell Tate | WR | 1417 | 24 | 31 | -7 |
 | David Montgomery | RB | 1276 | 22 | 29 | -7 |
 | Tony Pollard | RB | 1102 | 26 | 33 | -7 |
 | Jordan Mason | RB | 990 | 29 | 36 | -7 |
-| Davante Adams | WR | 2712 | 16 | 22 | -6 |
+| DJ Moore | WR | 1776 | 21 | 27 | -6 |

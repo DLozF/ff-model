@@ -50,7 +50,7 @@
 
 ## Injury overrides needing Diego's input
 
-- Jalen Hurts: weeks is TBD; override not applied. Note: blood clot.
+- None.
 
 ## Decision
 
@@ -59,16 +59,16 @@
 - Market ratio r: **0.034**
 - Other team receives V: **275.0**
 - Other team gives V: **8016.0**
-- Other-team model playoff delta (info only): **-0.2172**
+- Other-team model playoff delta (info only): **-0.2180**
 
 ## Team 1
 
 | Metric | Delta | 90% interval |
 |---|---:|---:|
-| playoffs | +0.2208 | [+0.2106, +0.2310] |
-| champion | +0.1560 | [+0.1456, +0.1664] |
-| wins | +0.7980 | [+0.7751, +0.8209] |
-| missed_playoffs | -0.2208 | [-0.2310, -0.2106] |
+| playoffs | +0.2180 | [+0.2077, +0.2283] |
+| champion | +0.1568 | [+0.1461, +0.1675] |
+| wins | +0.7930 | [+0.7701, +0.8159] |
+| missed_playoffs | -0.2180 | [-0.2283, -0.2077] |
 
 Roster balancing: dropped none; added none.
 
@@ -76,10 +76,10 @@ Roster balancing: dropped none; added none.
 
 | Metric | Delta | 90% interval |
 |---|---:|---:|
-| playoffs | -0.2172 | [-0.2275, -0.2069] |
-| champion | -0.0364 | [-0.0413, -0.0315] |
-| wins | -0.7750 | [-0.7990, -0.7510] |
-| missed_playoffs | +0.2172 | [+0.2069, +0.2275] |
+| playoffs | -0.2180 | [-0.2284, -0.2076] |
+| champion | -0.0364 | [-0.0415, -0.0313] |
+| wins | -0.7778 | [-0.8017, -0.7539] |
+| missed_playoffs | +0.2180 | [+0.2076, +0.2284] |
 
 Roster balancing: dropped none; added none.
 
@@ -89,26 +89,26 @@ Roster balancing: dropped none; added none.
 |---:|---|---:|---:|---:|
 | 7 (regular) | Team 1 | 119.67 | 128.08 | +8.41 |
 | 7 (regular) | Team 8 | 80.70 | 84.50 | +3.80 |
-| 8 (regular) | Team 1 | 102.55 | 102.41 | -0.13 |
-| 8 (regular) | Team 8 | 91.72 | 93.08 | +1.36 |
-| 9 (regular) | Team 1 | 117.29 | 127.09 | +9.80 |
-| 9 (regular) | Team 8 | 108.74 | 98.07 | -10.68 |
-| 10 (regular) | Team 1 | 116.32 | 126.49 | +10.17 |
-| 10 (regular) | Team 8 | 108.89 | 95.47 | -13.41 |
+| 8 (regular) | Team 1 | 102.54 | 102.41 | -0.13 |
+| 8 (regular) | Team 8 | 91.75 | 93.11 | +1.36 |
+| 9 (regular) | Team 1 | 117.30 | 127.10 | +9.80 |
+| 9 (regular) | Team 8 | 108.83 | 98.15 | -10.68 |
+| 10 (regular) | Team 1 | 116.32 | 126.50 | +10.18 |
+| 10 (regular) | Team 8 | 108.90 | 95.48 | -13.41 |
 | 11 (regular) | Team 1 | 102.52 | 111.82 | +9.30 |
-| 11 (regular) | Team 8 | 113.08 | 105.78 | -7.30 |
-| 12 (regular) | Team 1 | 118.57 | 126.53 | +7.95 |
-| 12 (regular) | Team 8 | 107.21 | 100.69 | -6.52 |
-| 13 (regular) | Team 1 | 113.85 | 123.54 | +9.69 |
-| 13 (regular) | Team 8 | 110.64 | 100.30 | -10.34 |
-| 14 (regular) | Team 1 | 108.31 | 115.48 | +7.18 |
-| 14 (regular) | Team 8 | 109.90 | 102.59 | -7.31 |
-| 15 (playoff) | Team 1 | 113.12 | 121.09 | +7.96 |
-| 15 (playoff) | Team 8 | 112.79 | 105.13 | -7.65 |
-| 16 (playoff) | Team 1 | 115.35 | 123.56 | +8.21 |
-| 16 (playoff) | Team 8 | 107.38 | 100.13 | -7.25 |
-| 17 (playoff) | Team 1 | 120.70 | 128.21 | +7.51 |
-| 17 (playoff) | Team 8 | 111.44 | 104.60 | -6.84 |
+| 11 (regular) | Team 8 | 113.19 | 105.88 | -7.31 |
+| 12 (regular) | Team 1 | 118.56 | 126.52 | +7.96 |
+| 12 (regular) | Team 8 | 107.28 | 100.75 | -6.52 |
+| 13 (regular) | Team 1 | 113.85 | 123.53 | +9.68 |
+| 13 (regular) | Team 8 | 110.74 | 100.40 | -10.34 |
+| 14 (regular) | Team 1 | 108.30 | 115.49 | +7.19 |
+| 14 (regular) | Team 8 | 109.91 | 102.58 | -7.32 |
+| 15 (playoff) | Team 1 | 113.12 | 121.10 | +7.98 |
+| 15 (playoff) | Team 8 | 112.84 | 105.19 | -7.65 |
+| 16 (playoff) | Team 1 | 115.33 | 123.54 | +8.22 |
+| 16 (playoff) | Team 8 | 107.35 | 100.10 | -7.25 |
+| 17 (playoff) | Team 1 | 120.69 | 128.20 | +7.51 |
+| 17 (playoff) | Team 8 | 111.54 | 104.70 | -6.84 |
 
 ## QB exposure: Team 1 lineup point share by NFL team
 
@@ -117,7 +117,7 @@ Roster balancing: dropped none; added none.
 | ARI | 0.014 | 0.021 |
 | CIN | 0.167 | 0.172 |
 | DAL | 0.129 | 0.121 |
-| DET | 0.189 | 0.177 |
+| DET | 0.190 | 0.177 |
 | GB | 0.118 | 0.111 |
 | HOU | 0.022 | 0.003 |
 | KC | 0.053 | 0.037 |

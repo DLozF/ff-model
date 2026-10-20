@@ -11,9 +11,9 @@
 | Coverage and CRPS | Not re-baselined | Unchanged |
 | Matchup Brier | Not re-baselined | Unchanged |
 | Copula stack ratio | Not re-baselined | Unchanged |
-| P6 runtime | 18.526s from latest verified run | Unchanged |
-| P8 runtime | 473.502s from latest verified run | Unchanged |
-| Tests | 53 passed from latest verified run | Unchanged |
+| P6 runtime | 18.526s from prior verified run | 19.513s after Hurts override |
+| P8 runtime | 473.502s from prior verified run | 466.183s after Hurts override |
+| Tests | 53 passed from prior verified run | 54 passed after override support |
 
 `reports/baseline_overnight.json` was not created because its required data refresh and validation were not run. No numbers were invented.
 
@@ -27,7 +27,7 @@
 - None during this abbreviated run.
 
 ## Needs Diego
-- Jalen Hurts still has `weeks: TBD` in `overrides.yaml`; the override remains unapplied.
+- No Jalen Hurts input remains pending; he is overridden out for the rest of the season.
 - Re-run these instructions before 07:00 Central to execute the full queue.
 - D1 was not implemented, so there is no safe cron line to install yet.
 

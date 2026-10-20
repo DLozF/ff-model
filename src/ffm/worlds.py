@@ -37,7 +37,7 @@ def load_injury_overrides(path: str | Path) -> list[dict]:
     return payload.get("overrides", [])
 
 
-def apply_initial_overrides(probabilities, names, overrides):
+def apply_initial_overrides(probabilities, names, overrides, total_weeks=None):
     """Apply numeric play probabilities and weeks-out overrides."""
     adjusted = np.asarray(probabilities, dtype=float).copy()
     weeks_out = np.zeros(adjusted.size, dtype=int)
@@ -48,6 +48,13 @@ def apply_initial_overrides(probabilities, names, overrides):
         if isinstance(weeks, str) and weeks.upper() == "TBD":
             pending.append(override)
             continue
+        if isinstance(weeks, str) and weeks.lower().replace(" ", "_") in {
+            "ros", "rest_of_season",
+        }:
+            if total_weeks is None:
+                pending.append(override)
+                continue
+            weeks = total_weeks
         index = lookup.get(str(override.get("name", "")).casefold())
         if index is None:
             continue
@@ -149,7 +156,9 @@ def generate_worlds(
     initial = _initial_probabilities(positions, injury_status, availability)
     override_weeks = np.zeros(players, dtype=int)
     if player_names is not None and overrides:
-        initial, override_weeks, _ = apply_initial_overrides(initial, player_names, overrides)
+        initial, override_weeks, _ = apply_initial_overrides(
+            initial, player_names, overrides, total_weeks=weeks,
+        )
     health = rng.random((n_worlds, players)) < initial
     h = np.array([availability["markov"][position]["h"] for position in positions])
     r = np.array([availability["markov"][position]["r"] for position in positions])

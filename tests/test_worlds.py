@@ -39,6 +39,19 @@ def test_override_with_tbd_weeks_changes_nothing():
     assert pending == overrides
 
 
+def test_rest_of_season_override_covers_every_simulated_week():
+    probabilities = np.array([0.8])
+    overrides = [{"name": "Jalen Hurts", "status": "out", "weeks": "rest_of_season"}]
+
+    adjusted, weeks_out, pending = apply_initial_overrides(
+        probabilities, np.array(["Jalen Hurts"]), overrides, total_weeks=11,
+    )
+
+    np.testing.assert_array_equal(adjusted, probabilities)
+    np.testing.assert_array_equal(weeks_out, np.array([11]))
+    assert pending == []
+
+
 def test_load_injury_overrides_accepts_top_level_list(tmp_path):
     path = tmp_path / "overrides.yaml"
     path.write_text("- name: Player One\n  P(play): 0.25\n", encoding="utf-8")

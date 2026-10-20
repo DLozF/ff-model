@@ -88,3 +88,5 @@
 - Final FantasyCalc regression suite: 53 passed in 9.19s; script compilation and `git diff --check` passed.
 - Overnight 2026-10-20: instructions arrived at 07:23 Central, after the 07:00 experiment cutoff; queue was not started.
 - Overnight safety: created tag `pre-overnight-2026-10-20` and branch `overnight-2026-10-20`; summary saved to reports/overnight_summary.md.
+- Jalen Hurts override resolved to rest of season; P6 rebuilt in 19.513s and all 55,000 saved availability cells are false.
+- Hurts-override P8 rerun: 37,125 candidates, 19,648 market passes, 323 WELP passes, 30 confirmed trades, 10 waivers; runtime 466.183s.
