@@ -12,6 +12,7 @@ from ffm.finder import trade_candidates, waiver_candidates
 from ffm.trade import (
     apply_trade, evaluate_rosters, metric_delta, roster_welp, trade_verdict,
 )
+from ffm.worlds import load_world_directory
 
 ROOT = Path("/opt/data/ff-model")
 
@@ -27,7 +28,7 @@ def paired_summary(before, after, team):
 def main():
     started = time.perf_counter()
     config = load_config()
-    world_dir = Path(config["paths"]["worlds"]) / "2026_w6"
+    world_dir = load_world_directory(ROOT / "models/world_manifest.json")
     points = np.load(world_dir / "points.npy", mmap_mode="r")
     available = np.load(world_dir / "available.npy", mmap_mode="r")
     projections = np.load(world_dir / "proj_seen.npy", mmap_mode="r")

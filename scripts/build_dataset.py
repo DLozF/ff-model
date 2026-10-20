@@ -3,6 +3,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ffm.actuals import merge_actual_sources
 from ffm.config import load_config
 from ffm.dataset import build_player_weeks
 from ffm.scoring import fantasy_points
@@ -41,15 +42,22 @@ def load_projections() -> pl.DataFrame:
 
 def load_stats() -> pl.DataFrame:
     """Load cached weekly Sleeper actual stats."""
-    frames = []
-    for path in sorted(CACHE.glob("sleeper_stats_*.parquet")):
-        season, week = _week_from_path(path)
-        frame = pl.read_parquet(path)
-        columns = ["player_id", *sorted(SCORING_KEYS & set(frame.columns))]
-        frames.append(frame.select(columns).with_columns(
-            pl.lit(season).alias("season"), pl.lit(week).alias("week")
-        ))
-    return pl.concat(frames, how="diagonal_relaxed")
+    source_frames = []
+    for pattern in ("sleeper_stats_*.parquet", "nflverse_actuals_*.parquet"):
+        frames = []
+        for path in sorted(CACHE.glob(pattern)):
+            season, week = _week_from_path(path)
+            frame = pl.read_parquet(path)
+            columns = ["player_id", *sorted(SCORING_KEYS & set(frame.columns))]
+            frames.append(frame.select(columns).with_columns(
+                pl.lit(season).alias("season"), pl.lit(week).alias("week")
+            ))
+        source_frames.append(
+            pl.concat(frames, how="diagonal_relaxed") if frames else pl.DataFrame()
+        )
+    if source_frames[1].is_empty():
+        return source_frames[0]
+    return merge_actual_sources(*source_frames)
 
 
 def validation_rate(

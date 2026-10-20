@@ -31,7 +31,7 @@
       "r_n": 167
     },
     "DEF": {
-      "h": 0.02,
+      "h": 0.0,
       "r": 0.8,
       "h_n": 2396,
       "r_n": 0,
@@ -40,21 +40,21 @@
     }
   },
   "status_play_probability": {
-    "Out": {
-      "probability": 0.0017574692442882249,
-      "n": 1707
-    },
-    "Doubtful": {
-      "probability": 0.0036363636363636364,
-      "n": 275
+    "Questionable": {
+      "probability": 0.6531413612565445,
+      "n": 2292
     },
     "none": {
       "probability": 0.9831198906280517,
       "n": 35841
     },
-    "Questionable": {
-      "probability": 0.6531413612565445,
-      "n": 2292
+    "Doubtful": {
+      "probability": 0.0036363636363636364,
+      "n": 275
+    },
+    "Out": {
+      "probability": 0.0017574692442882249,
+      "n": 1707
     },
     "Note": {
       "probability": 1.0,
@@ -67,8 +67,7 @@
     "default_used": true
   },
   "assumptions": [
-    "DEF h=0.0 replaced with 0.02",
-    "DEF r=None replaced with 0.8",
+    "DEF is exempt from h/r sanity checks because defenses only miss bye weeks; h_DEF=0 and r_DEF is unused.",
     "Historical IR transitions unavailable; r_IR defaulted to 0.25."
   ]
 }

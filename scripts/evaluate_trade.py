@@ -14,6 +14,7 @@ from ffm.trade import (
     apply_trade, evaluate_rosters, fuzzy_match, metric_delta, roster_lineup_points,
     trade_verdict,
 )
+from ffm.worlds import load_world_directory
 
 ROOT = Path("/opt/data/ff-model")
 
@@ -98,7 +99,7 @@ def main():
     parser.add_argument("--get", default="")
     args = parser.parse_args()
     config = load_config()
-    world_dir = Path(config["paths"]["worlds"]) / "2026_w6"
+    world_dir = load_world_directory(ROOT / "models/world_manifest.json")
     points = np.load(world_dir / "points.npy", mmap_mode="r")
     available = np.load(world_dir / "available.npy", mmap_mode="r")
     projections = np.load(world_dir / "proj_seen.npy", mmap_mode="r")

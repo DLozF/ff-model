@@ -1,0 +1,12 @@
+{
+  "source_commit": "0f16eb9",
+  "description": "Frozen K=500/smoothing=9 base-model 2026 metrics before the week-6 actual-stat rebuild.",
+  "rows": [
+    {"pos": "QB", "coverage_50": 0.438, "coverage_80": 0.611, "coverage_95": 0.865, "crps": 5.041},
+    {"pos": "RB", "coverage_50": 0.396, "coverage_80": 0.763, "coverage_95": 0.901, "crps": 3.229},
+    {"pos": "WR", "coverage_50": 0.390, "coverage_80": 0.731, "coverage_95": 0.919, "crps": 3.259},
+    {"pos": "TE", "coverage_50": 0.315, "coverage_80": 0.782, "coverage_95": 0.931, "crps": 2.568},
+    {"pos": "K", "coverage_50": 0.434, "coverage_80": 0.676, "coverage_95": 0.841, "crps": 2.997},
+    {"pos": "DEF", "coverage_50": 0.544, "coverage_80": 0.778, "coverage_95": 0.956, "crps": 2.785}
+  ]
+}

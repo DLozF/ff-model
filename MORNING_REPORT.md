@@ -1,69 +1,86 @@
-# Morning report: 2026-10-19
+# Morning report: 2026-10-20
+
 ## Status
-| Phase | Status | Key result |
+| Phase | Status | Latest result |
 |---|---|---|
-| P0 | done | Environment, config, git, and tests initialized |
-| P1 | done | 35,741 training rows; scoring matched Sleeper on 96.93% |
-| P2 | done | Greedy matched integer program on 1,000 rosters |
-| P3 | blocked | Data contamination fixed; rolling b/s candidate failed strict coverage and was not adopted |
-| P4 | done | Injury join and missing-week Markov bugs fixed; only DEF h/r defaults remain |
-| P5 | done | Positive-definite copula; held-out stack ratio 1.1415 |
-| P6 | done | 5,000-world synthetic season completed in 19.450s |
-| P7 | done | Empty/clone/lopsided trade checks passed |
-| P8 | done | 37,125 trades and 600 waivers screened in 845.893s |
-| P9 | blocked | Copula Brier improved; stacked worst calibration decile was 6.51% |
-| P10 | done | Yahoo and CSV loaders tested without logging in |
-| P11 | done | E1/E2 rejected; E3 inapplicable |
-## Key numbers
-- P3 root cause: 2026 week 6 had snaps/projections but no actual-stat payload; 299 snap-only player rows were incorrectly treated as played with zero points. Those rows are now excluded.
-- 2026 baseline -> rolling b/s coverage 50/80/95; CRPS:
-  - QB: 50.3/70.2/92.3% -> 47.5/70.7/92.3%; 4.380 -> 4.396
-  - RB: 45.5/85.1/96.3% -> 53.3/85.8/95.9%; 2.860 -> 2.854
-  - WR: 44.7/77.3/95.6% -> 49.3/79.9/95.1%; 3.123 -> 3.128
-  - TE: 36.7/81.9/95.8% -> 44.9/84.0/96.7%; 2.500 -> 2.496
-  - K: 50.0/77.8/96.8% -> 50.0/79.7/98.1%; 2.588 -> 2.571
-  - DEF: 54.4/77.8/95.6% -> 53.8/77.2/93.7%; 2.785 -> 2.788
-- Rolling b/s improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025; strict per-position coverage still failed, so it was not adopted.
-- P4 corrected status estimates: P(play|Out)=0.18% (n=1,707); P(play|Questionable)=65.31% (n=2,292). Both pass.
-- Final regression suite: 41 passed.
-- Copula: QB1-WR1 correlation 0.313696; stack variance ratio 1.141456 vs independent 1.544908.
-- Matchups overall: Brier 0.219201 copula vs 0.219208 independent; worst decile error 2.557%.
-- Overall copula-minus-independent Brier: -0.00000784; paired week-bootstrap 95% interval [-0.00006456, +0.00004365].
-- Stacked: Brier 0.217772 vs 0.217796; worst decile error 6.512% with 360 pairs.
-- Stacked Brier difference: -0.00002415; 95% interval [-0.00019208, +0.00014881].
-- n_final worlds + season runtime: 19.450 seconds; deterministic rerun passed.
-## Synthetic league odds
-| Team | P(playoffs) | P(bye) | P(champion) | Exp. wins |
+| P3 | blocked | Week-6 actuals rebuilt; rolling b/s still fails strict coverage and remains off |
+| P4 | done | DEF exempt with h=0; corrected player availability estimates retained |
+| P6 | done | Base-model worlds rebuilt from week 7 |
+| P7 | done | New lopsided sample trade returned ACCEPT |
+| P8 | done | Trade and waiver finder rerun under the 20-minute gate |
+| P9 | blocked | Rerun reproduced the stacked 6.51% calibration miss |
+
+## Week-6 actual-stat rebuild
+- nflverse scoring versus Sleeper, 2026 weeks 1-5: **1,510/1,568 = 96.3010%** within 0.5 points; required threshold was 95%.
+- Accepted and cached **338** scored nflverse rows for 2026 week 6.
+- Rebuilt dataset: **43,076 player-week rows**; historical 2021-2025 training rows remain **35,741**.
+- Projection/actual scan found **22** completed team-week gaps. All 22 were bye weeks; **0** teams with scheduled games lacked actual rows.
+- Full audit: `reports/actuals_audit.md`.
+
+## P3 base-model impact of fixing week 6
+| Pos | Coverage 50 before → after | Coverage 80 before → after | Coverage 95 before → after | CRPS before → after |
 |---|---:|---:|---:|---:|
-| Team 1 | 0.6122 | 0.2476 | 0.1442 | 4.745 |
-| Team 2 | 0.6158 | 0.2396 | 0.0872 | 4.864 |
-| Team 3 | 0.6072 | 0.2346 | 0.0902 | 4.869 |
-| Team 4 | 0.6908 | 0.2908 | 0.1302 | 5.172 |
-| Team 5 | 0.4392 | 0.1266 | 0.0698 | 4.362 |
-| Team 6 | 0.5404 | 0.1876 | 0.1028 | 4.545 |
-| Team 7 | 0.3880 | 0.1024 | 0.0530 | 4.076 |
-| Team 8 | 0.3852 | 0.1044 | 0.0592 | 4.104 |
-| Team 9 | 0.3634 | 0.0872 | 0.0516 | 4.082 |
-| Team 10 | 0.5050 | 0.1562 | 0.0984 | 4.530 |
-| Team 11 | 0.3982 | 0.1012 | 0.0426 | 4.154 |
-| Team 12 | 0.4546 | 0.1218 | 0.0708 | 4.497 |
-## Sample trade report
-- Team 1 gives AJ Barner and gets Christian McCaffrey from Team 5: **ACCEPT**; acceptance **UNLIKELY**.
-- Team 1 delta: playoffs +0.2534 [0.2429, 0.2639]; champion +0.1900 [0.1790, 0.2010]; wins +1.0678 [1.0433, 1.0923].
-- Team 5 playoff delta: -0.3008 [-0.3117, -0.2899].
-## Assumptions I made
-- Yahoo VERIFY settings remain the PLAN.md defaults until the real league is connected.
-- P4 empirical h/r estimates are now used for QB/RB/WR/TE/K. DEF h/r, r_IR=0.25, kappa=0.75, and beta defaults remain because their checks/sample gates failed.
-- P8 used raw post-trade WELP as a fast pre-screen, then exact roster balancing before confirmation.
-- PuLP 4.1 had no solver binary; the reference lineup integer program used SciPy MILP.
-## Blocked or failed
-- P3: rolling b/s met the CRPS-improvement requirement in 3/4 seasons but did not bring every position-season coverage interval within 3 points of nominal. No P6/P7/P9 rebuild was triggered.
-- P9: Brier passed overall and stacked, but the stacked worst decile error was 6.512%, above the 5% gate; the bin had 360 pairs, so it was not low sample.
-## What Diego needs to do
-1. Obtain Yahoo Fantasy API read approval, add credentials and league ID to `.env`, then follow `docs/YAHOO_SETUP.md` for the one-time login.
-2. Run the documented `docker exec -it chronos ... scripts/load_yahoo.py` command; it will replace VERIFY settings and cache real rosters/standings.
-3. Review the real scoring settings and team identity after import before trusting trade recommendations.
-## Next phases to run
-- Rebuild future worlds and league odds with Yahoo rosters, standings, scoring, schedule, and free agents.
-- Rerun trade finder and waiver evaluator against the real league.
-- Investigate a structural P3 calibration alternative; the mandated rolling b/s candidate was rejected by the coverage gate.
+| QB | 0.438 → 0.529 | 0.611 → 0.719 | 0.865 → 0.933 | 5.041 → 4.272 |
+| RB | 0.396 → 0.459 | 0.763 → 0.843 | 0.901 → 0.961 | 3.229 → 2.890 |
+| WR | 0.390 → 0.446 | 0.731 → 0.782 | 0.919 → 0.954 | 3.259 → 3.105 |
+| TE | 0.315 → 0.374 | 0.782 → 0.809 | 0.931 → 0.953 | 2.568 → 2.577 |
+| K | 0.434 → 0.475 | 0.676 → 0.781 | 0.841 → 0.956 | 2.997 → 2.630 |
+| DEF | 0.544 → 0.544 | 0.778 → 0.778 | 0.956 → 0.956 | 2.785 → 2.785 |
+
+The rolling b/s candidate still improves sample-weighted CRPS in 3/4 seasons but fails strict per-position coverage, so the **base model remains active**. Full results: `reports/calibration.md`.
+
+## P4 availability
+- DEF only misses bye weeks: `h_DEF=0`.
+- DEF is exempt from both h/r sanity gates; `r_DEF` is unused.
+- `P(play | Out)=0.001757`, n=1,707.
+- `P(play | Questionable)=0.653141`, n=2,292.
+- Details: `reports/availability.md`.
+
+## P6 base-model worlds
+- First incomplete week: **7**.
+- Players: **534**; worlds: **5,000**.
+- Runtime: **18.695 seconds**.
+- Same-seed reproducibility: passed.
+- Sum P(playoffs): **6.000000000000**; sum P(champion): **1.000000000000**.
+
+| Team | P(playoffs) | P(bye) | P(champion) | Expected wins |
+|---|---:|---:|---:|---:|
+| Team 1 | 0.5530 | 0.1890 | 0.1056 | 3.991 |
+| Team 2 | 0.4640 | 0.1478 | 0.0718 | 3.872 |
+| Team 3 | 0.5818 | 0.2170 | 0.1130 | 4.217 |
+| Team 4 | 0.5540 | 0.2010 | 0.1112 | 4.174 |
+| Team 5 | 0.5328 | 0.1832 | 0.1026 | 4.024 |
+| Team 6 | 0.5872 | 0.2226 | 0.1038 | 4.371 |
+| Team 7 | 0.4490 | 0.1368 | 0.0596 | 3.774 |
+| Team 8 | 0.5066 | 0.1652 | 0.0530 | 4.045 |
+| Team 9 | 0.4772 | 0.1412 | 0.0878 | 3.958 |
+| Team 10 | 0.4612 | 0.1478 | 0.0878 | 3.864 |
+| Team 11 | 0.5210 | 0.1778 | 0.0654 | 4.272 |
+| Team 12 | 0.3122 | 0.0706 | 0.0384 | 3.437 |
+
+## P7 sample trade
+Team 1 gives **Rachaad White** to Team 5 for **Christian McCaffrey**:
+- Verdict: **ACCEPT**; acceptance: **UNLIKELY**.
+- Team 1 P(playoffs): **+0.2352** [0.2248, 0.2456].
+- Team 1 P(champion): **+0.1410** [0.1310, 0.1510].
+- Team 1 expected wins: **+0.8396** [0.8170, 0.8622].
+
+## P8 finder
+- Runtime: **1,189.548 seconds**; under the 1,200-second gate.
+- Trades screened: **37,125**; WELP passes: **1,107**; confirmed: **30**.
+- Waiver pairs screened: **600**; confirmed: **10**.
+- Top trade: give Jalen Coker + Kyle Monangai for Derrick Henry; playoff gain **+0.1578**, ACCEPT/LIKELY.
+- Top waiver: add Jalen Hurts, drop Denzel Boston; playoff gain **+0.0780**, ACCEPT.
+- Final regression suite: **48 passed in 9.11s**.
+
+## P9 matchup calibration
+- Overall Brier: copula **0.219201**, independent **0.219208**; worst copula bin **2.557%**.
+- Stacked Brier: copula **0.217772**, independent **0.217796**; worst copula bin **6.512%**.
+- Stacked offending bin remains 360 pairs, not low sample.
+- P9 remains blocked on the 5% stacked-bin gate.
+
+## Remaining defaults/blockers
+- `r_IR=0.25`, `kappa=0.75`, and WR/TE/RB beta defaults remain due insufficient samples.
+- P3 remains blocked on strict coverage.
+- P9 remains blocked on stacked calibration.
+- Yahoo remains disconnected; synthetic league settings are still in use.

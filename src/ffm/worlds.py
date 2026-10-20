@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import numpy as np
 from scipy.stats import norm
 
@@ -7,6 +10,19 @@ def weighted_recent_projection(values: list[float]) -> float:
     recent = list(values)[:3]
     weights = list(range(len(recent), 0, -1))
     return sum(value * weight for value, weight in zip(recent, weights)) / sum(weights)
+
+
+def write_world_manifest(path: str | Path, world_dir: str | Path, first_week: int) -> None:
+    """Record the active saved-world directory for downstream evaluators."""
+    Path(path).write_text(
+        json.dumps({"world_dir": str(Path(world_dir)), "first_week": int(first_week)}, indent=2),
+        encoding="utf-8",
+    )
+
+
+def load_world_directory(path: str | Path) -> Path:
+    """Load the active saved-world directory from its manifest."""
+    return Path(json.loads(Path(path).read_text(encoding="utf-8"))["world_dir"])
 
 
 def _initial_probabilities(positions, statuses, availability):

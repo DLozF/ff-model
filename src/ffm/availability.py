@@ -3,7 +3,7 @@ from collections import defaultdict
 import polars as pl
 
 DEFAULTS = {
-    "h": {"QB": 0.04, "RB": 0.08, "WR": 0.07, "TE": 0.07, "K": 0.03, "DEF": 0.02},
+    "h": {"QB": 0.04, "RB": 0.08, "WR": 0.07, "TE": 0.07, "K": 0.03, "DEF": 0.0},
     "r": {"QB": 0.60, "RB": 0.55, "WR": 0.55, "TE": 0.55, "K": 0.65, "DEF": 0.80},
     "r_ir": 0.25,
     "status": {"Out": 0.02, "Doubtful": 0.25, "Questionable": 0.75, "none": 0.98},

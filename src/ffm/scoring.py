@@ -1,9 +1,41 @@
 from collections.abc import Mapping
 
 
+NFLVERSE_TO_SCORING = {
+    "pass_yd": "passing_yards",
+    "pass_td": "passing_tds",
+    "pass_int": "passing_interceptions",
+    "pass_2pt": "passing_2pt_conversions",
+    "rush_yd": "rushing_yards",
+    "rush_td": "rushing_tds",
+    "rush_2pt": "rushing_2pt_conversions",
+    "rec": "receptions",
+    "rec_yd": "receiving_yards",
+    "rec_td": "receiving_tds",
+    "rec_2pt": "receiving_2pt_conversions",
+    "fum_lost": "fumbles_lost_total",
+    "ret_td": "special_teams_tds",
+    "xpm": "pat_made",
+    "fgm_0_19": "fg_made_0_19",
+    "fgm_20_29": "fg_made_20_29",
+    "fgm_30_39": "fg_made_30_39",
+    "fgm_40_49": "fg_made_40_49",
+    "fgm_50_59": "fg_made_50_59",
+    "fgm_60p": "fg_made_60_",
+}
+
+
 def _value(stats: Mapping, key: str) -> float:
     value = stats.get(key, 0)
     return float(value) if value is not None else 0.0
+
+
+def nflverse_stat_line(stats: Mapping) -> dict[str, float]:
+    """Map nflverse weekly player-stat fields to the configured scoring keys."""
+    return {
+        scoring_key: _value(stats, nflverse_key)
+        for scoring_key, nflverse_key in NFLVERSE_TO_SCORING.items()
+    }
 
 
 def _defense_tier(points: float, tiers: Mapping[str, float]) -> float:

@@ -40,6 +40,15 @@ def apply_sanity(markov, status):
     """Replace failed availability estimates with declared defaults."""
     assumptions = []
     for position, values in markov.items():
+        if position == "DEF":
+            values["h_raw"] = values["h"]
+            values["r_raw"] = values["r"]
+            values["h"] = 0.0
+            values["r"] = DEFAULTS["r"]["DEF"]
+            assumptions.append(
+                "DEF is exempt from h/r sanity checks because defenses only miss bye weeks; h_DEF=0 and r_DEF is unused."
+            )
+            continue
         if values["h"] is None or not 0.01 < values["h"] < 0.2:
             assumptions.append(f"{position} h={values['h']} replaced with {DEFAULTS['h'][position]}")
             values["h_raw"] = values["h"]
@@ -133,13 +142,14 @@ def write_report(availability):
     for position, values in availability["markov"].items():
         h_raw = values.get("h_raw", values["h"])
         r_raw = values.get("r_raw", values["r"])
-        h_ok = h_raw is not None and 0.01 < h_raw < 0.2
-        r_ok = r_raw is not None and 0.1 < r_raw < 0.9
+        exempt = position == "DEF"
+        h_ok = exempt or (h_raw is not None and 0.01 < h_raw < 0.2)
+        r_ok = exempt or (r_raw is not None and 0.1 < r_raw < 0.9)
         lines.append(
             f"| {position} | {h_raw if h_raw is not None else 'NA'} | {values['h_n']} | "
-            f"{'pass' if h_ok else 'FAIL'} | {values['h']:.6f} | "
+            f"{'exempt' if exempt else 'pass' if h_ok else 'FAIL'} | {values['h']:.6f} | "
             f"{r_raw if r_raw is not None else 'NA'} | {values['r_n']} | "
-            f"{'pass' if r_ok else 'FAIL'} | {values['r']:.6f} |"
+            f"{'exempt' if exempt else 'pass' if r_ok else 'FAIL'} | {values['r']:.6f} |"
         )
     lines.extend([
         "",

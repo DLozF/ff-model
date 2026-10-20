@@ -80,6 +80,22 @@ def backtest(frame, k, smooth):
     return results, models
 
 
+def week6_base_comparison(final_frame):
+    """Compare frozen 0f16eb9 metrics with the nflverse-rebuilt week 6 state."""
+    frozen = json.loads(
+        (ROOT / "models/p3_pre_week6_base_metrics.json").read_text(encoding="utf-8")
+    )["rows"]
+    train = final_frame.filter((pl.col("season") <= 2025) & pl.col("played"))
+    model = QuantileModel.fit(train, k=500, smooth=9)
+    rebuilt = evaluate(
+        model,
+        train,
+        final_frame.filter((pl.col("season") == 2026) & pl.col("played")),
+        2026,
+    )
+    return {"Before fix": frozen, "After rebuild": rebuilt}
+
+
 def rolling_adjustment(frame, models):
     """Apply past-only eight-week per-position bias/spread calibration."""
     results = []
@@ -163,7 +179,7 @@ def season_crps(results):
     return output
 
 
-def write_report(primary, retry, before, after, adopted, improved_seasons):
+def write_report(primary, retry, before, after, adopted, improved_seasons, week6_comparison):
     """Write baseline diagnostics and rolling-calibration comparison."""
     before_by_key = {(row["season"], row["pos"]): row for row in before}
     lines = [
@@ -177,11 +193,33 @@ def write_report(primary, retry, before, after, adopted, improved_seasons):
         f"- Test seasons with lower sample-weighted CRPS: {improved_seasons}/4.",
         f"- Rolling calibration adopted: {'yes' if adopted else 'no'}.",
         "",
+        "## Base-model 2026 impact of week 6 handling",
+        "",
+        "The same K=500/smoothing=9 base model fit on 2021-2025 is used for all states.",
+        "",
+        "| Pos | Cov50 before | Cov80 before | Cov95 before | CRPS before | Cov50 after | Cov80 after | Cov95 after | CRPS after |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    comparison_maps = {
+        label: {row["pos"]: row for row in rows}
+        for label, rows in week6_comparison.items()
+    }
+    for position in POSITIONS:
+        zero = comparison_maps["Before fix"][position]
+        rebuilt = comparison_maps["After rebuild"][position]
+        lines.append(
+            f"| {position} | {zero['coverage_50']:.3f} | {zero['coverage_80']:.3f} | "
+            f"{zero['coverage_95']:.3f} | {zero['crps']:.3f} | "
+            f"{rebuilt['coverage_50']:.3f} | {rebuilt['coverage_80']:.3f} | "
+            f"{rebuilt['coverage_95']:.3f} | {rebuilt['crps']:.3f} |"
+        )
+    lines.extend([
+        "",
         "## Before/after by position and season",
         "",
         "| Season | Pos | N | Cov50 before | Cov50 after | Cov80 before | Cov80 after | Cov95 before | Cov95 after | CRPS before | CRPS after |",
         "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
-    ]
+    ])
     for row in after:
         old = before_by_key[(row["season"], row["pos"])]
         lines.append(
@@ -227,6 +265,7 @@ def write_report(primary, retry, before, after, adopted, improved_seasons):
 
 def main():
     frame = pl.read_parquet(DATA)
+    comparison = week6_base_comparison(frame)
     primary, _ = backtest(frame, 300, 5)
     retry, retry_models = backtest(frame, 500, 9)
     adjusted, parameter_log = rolling_adjustment(frame, retry_models)
@@ -240,7 +279,7 @@ def main():
     (ROOT / "logs/p3-rolling-parameters.json").write_text(
         json.dumps(parameter_log, indent=2, allow_nan=False), encoding="utf-8"
     )
-    write_report(primary, retry, retry, adjusted, adopted, improved)
+    write_report(primary, retry, retry, adjusted, adopted, improved, comparison)
 
     print(f"rolling calibration adopted: {adopted}")
     print(f"strict coverage gate: {strict_coverage_passes(adjusted)}")

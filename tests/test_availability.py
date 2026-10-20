@@ -1,10 +1,15 @@
 import polars as pl
 
 from ffm.availability import (
+    DEFAULTS,
     estimate_markov,
     injury_status_outcomes,
     status_play_probabilities,
 )
+
+
+def test_defense_availability_never_misses_non_bye_week():
+    assert DEFAULTS["h"]["DEF"] == 0.0
 
 
 def test_markov_counts_transitions_inside_player_window():

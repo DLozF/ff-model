@@ -10,7 +10,7 @@ from ffm.distributions import QuantileModel
 from ffm.ids import normalize_team
 from ffm.league import synthetic_draft
 from ffm.season import simulate_season
-from ffm.worlds import generate_worlds, weighted_recent_projection
+from ffm.worlds import generate_worlds, weighted_recent_projection, write_world_manifest
 
 ROOT = Path("/opt/data/ff-model")
 CACHE = ROOT / "data/cache"
@@ -163,6 +163,7 @@ def main():
     runtime = time.perf_counter() - started
     world_dir = Path(config["paths"]["worlds"]) / f"2026_w{first_week}"
     world_dir.mkdir(parents=True, exist_ok=True)
+    write_world_manifest(ROOT / "models/world_manifest.json", world_dir, first_week)
     np.save(world_dir / "points.npy", points)
     np.save(world_dir / "available.npy", available)
     np.save(world_dir / "proj_seen.npy", proj_seen)

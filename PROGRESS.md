@@ -7,11 +7,11 @@
 | P1 | done | 35,741 training rows; score match 96.93%; 2026 projections through week 18 |
 | P2 | done | Greedy matched integer program on 1,000 random rosters |
 | P3 | blocked | Rolling b/s candidate improved CRPS in 3/4 seasons but failed strict coverage; not adopted |
-| P4 | done | Injury join and missing-week Markov bugs fixed; only DEF h/r defaults remain |
+| P4 | done | DEF exempt with h=0; corrected player h/r and injury-status estimates retained |
 | P5 | done | QB1-WR1 r=0.3137; held-out stack variance ratio=1.1415 |
-| P6 | done | 5,000 worlds + season in 19.450s; playoff/champion sums exact |
-| P7 | done | Empty/clone zero; AJ Barner for Christian McCaffrey => ACCEPT |
-| P8 | done | 37,125 trades + 600 waivers in 845.893s; both reports saved |
+| P6 | done | Week-7 start; 5,000 worlds + season in 18.695s; probability sums exact |
+| P7 | done | Rachaad White for Christian McCaffrey => ACCEPT |
+| P8 | done | 37,125 trades + 600 waivers in 1,189.548s; both 2026-10-20 reports saved |
 | P9 | blocked | Copula Brier wins overall/stacked; stacked worst decile error 6.51% |
 | P10 | done | Fake Yahoo JSON test passes; live and CSV loaders documented |
 | P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
@@ -20,13 +20,13 @@
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
 - Sleeper's Rotowire `pts_ppr` projection is the pregame projection source.
 - `pulp_lineup` uses SciPy's MILP backend because installed PuLP 4.1 has no available solver binary.
-- P4 corrected empirical h/r estimates are used for QB/RB/WR/TE/K; DEF h/r and r_IR retain documented defaults.
+- P4 corrected empirical h/r estimates are used for QB/RB/WR/TE/K. DEF is exempt because defenses only miss bye weeks: h_DEF=0 and r_DEF is unused.
 - Historical IR transitions were unavailable; r_IR=0.25. QB replacement sample was 0, so kappa=0.75 and beta defaults WR/TE=0.6, RB=0.3.
 - P8 used raw post-trade roster WELP as a fast pre-screen, then applied exact roster balancing and WELP before full confirmation.
 - Yahoo Fantasy API access currently requires manual approval before OAuth app use; setup documentation includes the approval step.
 
 ## Blocked
-- P3 calibration gate: after removing incomplete 2026 week-6 zero outcomes, the rolling eight-week b/s candidate improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025, and still failed the every-position coverage gate. It was not adopted. Full results: reports/calibration.md.
+- P3 calibration gate: after rebuilding 2026 week 6 from nflverse actuals, the rolling eight-week b/s candidate improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025, and still failed the every-position coverage gate. It was not adopted. Full results: reports/calibration.md.
 - P9 calibration gate: copula Brier beat independent overall (0.219201 vs 0.219208) and stacked (0.217772 vs 0.217796), but stacked worst equal-count bin error was 0.065119 (>0.05). Overall worst bin was 0.025570.
 
 ## Log
@@ -60,8 +60,17 @@
 - P11: E1 improvements were 0.166%, 0.126%, -0.089%; E2 improvements were 0.009%, 0.001%, -0.005%.
 - P11 checks: neither experiment met the 1% in 2-of-3 rule, E3 was inapplicable, all experiment flags remain off; 35 tests passed.
 - P3 root cause: 2026 week 6 had projections and snap counts but no Sleeper actual-stat payload; snap-only rows were incorrectly marked played with zero points. Dataset logic now requires an actual-stat row before snap evidence can mark a player played.
-- P3 rolling candidate: per-position b/s was fit by CRPS on only the prior eight completed weeks, including late prior seasons, then shrunk by n/(n+200). CRPS improved in 3/4 seasons, but strict coverage failed, so no P6/P7/P9 reruns were triggered.
+- P3 rolling candidate: per-position b/s was fit by CRPS on only the prior eight completed weeks, including late prior seasons, then shrunk by n/(n+200). CRPS improved in 3/4 seasons, but strict coverage failed, so the base model remains active.
 - P3 audit: all weekly b/s estimates, shrinkage weights, sample sizes, and exact prior-week keys are logged in logs/p3-rolling-parameters.json.
 - P4 root causes: the injury join started from projection rows, excluding most Out players, and Markov estimation ignored absent middle weeks. Both were corrected before reevaluating defaults.
-- P4 corrected estimates: Out P(play)=0.001757 (n=1,707), Questionable=0.653141 (n=2,292); both pass. QB/RB/WR/TE/K h and r pass. DEF h=0.0 (n=2,396) and r unavailable (n=0) fail and use defaults 0.02/0.80. Full details: reports/availability.md.
+- P4 corrected estimates: Out P(play)=0.001757 (n=1,707), Questionable=0.653141 (n=2,292); both pass. QB/RB/WR/TE/K h and r pass. DEF is exempt, with h=0 and r unused. Full details: reports/availability.md.
 - P3/P4 regression suite after fixes: 41 passed in 8.94s.
+- Week-6 actual rebuild: nflverse scoring matched Sleeper within 0.5 on 1,510/1,568 rows (96.3010%) over 2026 weeks 1-5, exceeding the 95% requirement. Cached 338 scored nflverse week-6 rows and rebuilt player_weeks.
+- Actual-source audit: found 22 completed team-week groups with projections and zero actual rows; all 22 were bye weeks and zero involved a scheduled game. Full list: reports/actuals_audit.md.
+- P3 base-model week-6 comparison is recorded in reports/calibration.md. After rebuild, 2026 QB coverage changed from 0.438/0.611/0.865 to 0.529/0.719/0.933 and CRPS from 5.041 to 4.272; all positions are listed in the report.
+- P4 follow-up: DEF is exempt from h/r sanity checks; h_DEF=0 and r_DEF is unused. This is recorded under Assumptions in models/availability.json and reports/availability.md.
+- P6 base-model rerun starts at week 7 with 534 players and 5,000 worlds; runtime 18.695s, deterministic check passed, playoff probability sum=6 and champion probability sum=1.
+- P7 base-model sample: Team 1 gives Rachaad White to Team 5 for Christian McCaffrey => ACCEPT / UNLIKELY. Team 1 playoff delta +0.2352 [0.2248, 0.2456], champion delta +0.1410 [0.1310, 0.1510].
+- P8 base-model rerun: 37,125 candidates, 1,107 WELP passes, 30 confirmed trades, 10 confirmed waivers; solo runtime 1,189.548s (<20 minutes).
+- P9 base-model rerun reproduced overall Brier 0.219201 copula vs 0.219208 independent and stacked 0.217772 vs 0.217796; stacked worst-bin error remains 0.065119.
+- Final follow-up regression suite: 48 passed in 9.11s; rebuilt dataset verification returned 43,076 rows and 96.9689% scoring agreement.
