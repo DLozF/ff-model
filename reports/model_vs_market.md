@@ -41,3 +41,13 @@ Top 150 players by FantasyCalc redraft value.
 | Tony Pollard | RB | 1102 | 26 | 33 | -7 |
 | Jordan Mason | RB | 990 | 29 | 36 | -7 |
 | DJ Moore | WR | 1776 | 21 | 27 | -6 |
+
+<!-- forward-test:start -->
+## Forward-test rank accuracy
+
+Mean absolute error versus each week's actual within-position rank; lower is better.
+
+| Snapshot | Season | Week | Pos | Players | Model MAE | Market MAE | Closer |
+|---|---:|---:|---|---:|---:|---:|---|
+| - | - | - | - | - | - | - | No completed snapshots yet |
+<!-- forward-test:end -->

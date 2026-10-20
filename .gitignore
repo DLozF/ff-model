@@ -1,7 +1,8 @@
-.env
 data/cache/
+.env
+*.key
 logs/
 *.npy
+*.pyc
 __pycache__/
 .pytest_cache/
-*.pyc

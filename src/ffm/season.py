@@ -13,17 +13,23 @@ def round_robin(teams: int) -> list[list[tuple[int, int]]]:
     return rounds
 
 
-def _team_scores(points, projections, available, positions, rosters):
-    weeks, worlds, _ = points.shape
-    scores = np.zeros((weeks, worlds, len(rosters)), dtype=np.float32)
-    for team, roster in enumerate(rosters):
-        indices = np.asarray(roster)
-        for week in range(weeks):
-            selected = greedy(
-                projections[week][:, indices], positions[indices], available[week][:, indices]
-            )
-            scores[week, :, team] = np.sum(points[week][:, indices] * selected, axis=1)
+def roster_team_scores(points, projections, available, positions, roster):
+    """Return week-by-world scores for one roster."""
+    indices = np.asarray(roster)
+    scores = np.zeros(points.shape[:2], dtype=np.float32)
+    for week in range(points.shape[0]):
+        selected = greedy(
+            projections[week][:, indices], positions[indices], available[week][:, indices]
+        )
+        scores[week] = np.sum(points[week][:, indices] * selected, axis=1)
     return scores
+
+
+def _team_scores(points, projections, available, positions, rosters):
+    return np.stack([
+        roster_team_scores(points, projections, available, positions, roster)
+        for roster in rosters
+    ], axis=2)
 
 
 def _scores_for(scores: np.ndarray, teams: np.ndarray) -> np.ndarray:
@@ -37,20 +43,15 @@ def _winner(scores: np.ndarray, high_seed: np.ndarray, low_seed: np.ndarray) -> 
     return np.where(high_score >= low_score, high_seed, low_seed)
 
 
-def simulate_season(
-    points: np.ndarray,
-    projections: np.ndarray,
-    available: np.ndarray,
-    positions: np.ndarray,
-    rosters: list[list[int]],
+def simulate_team_scores(
+    team_scores: np.ndarray,
     week_numbers: list[int],
     regular_season_end: int,
     playoff_teams: int,
 ) -> dict:
-    """Simulate standings and a six-team, three-week playoff bracket."""
-    team_scores = _team_scores(points, projections, available, positions, rosters)
-    worlds = points.shape[1]
-    teams = len(rosters)
+    """Simulate standings and playoffs from cached team scores."""
+    worlds = team_scores.shape[1]
+    teams = team_scores.shape[2]
     wins = np.zeros((worlds, teams), dtype=np.float32)
     points_for = np.zeros((worlds, teams), dtype=np.float32)
     schedule = round_robin(teams)
@@ -93,3 +94,20 @@ def simulate_season(
         "expected_wins": wins.mean(axis=0),
         "expected_points_for": points_for.mean(axis=0),
     }
+
+
+def simulate_season(
+    points: np.ndarray,
+    projections: np.ndarray,
+    available: np.ndarray,
+    positions: np.ndarray,
+    rosters: list[list[int]],
+    week_numbers: list[int],
+    regular_season_end: int,
+    playoff_teams: int,
+) -> dict:
+    """Simulate standings and a six-team, three-week playoff bracket."""
+    return simulate_team_scores(
+        _team_scores(points, projections, available, positions, rosters),
+        week_numbers, regular_season_end, playoff_teams,
+    )

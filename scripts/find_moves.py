@@ -18,8 +18,9 @@ from ffm.market import (
     package_value,
     write_model_vs_market,
 )
+from ffm.season import roster_team_scores, simulate_team_scores
 from ffm.trade import (
-    apply_trade, evaluate_rosters, fragility_label, metric_delta, roster_welp,
+    apply_trade, fragility_label, metric_delta, roster_welp,
     stress_worlds, trade_verdict,
 )
 from ffm.worlds import load_injury_overrides, load_world_directory
@@ -108,24 +109,36 @@ def main():
                     "other_gives_value": other_gives_value,
                 })
     screened.sort(key=lambda row: row["my_welp"], reverse=True)
-    before = evaluate_rosters(points, projections, available, positions, rosters, weeks, 14, 6)
+    base_scores = np.stack([
+        roster_team_scores(points, projections, available, positions, roster)
+        for roster in rosters
+    ], axis=2)
+    before = simulate_team_scores(base_scores, weeks, 14, 6)
     stress_points, stress_available = stress_worlds(points, available, positions)
-    stress_before = evaluate_rosters(
-        stress_points, projections, stress_available, positions, rosters, weeks, 14, 6
-    )
+    stress_base_scores = np.stack([
+        roster_team_scores(stress_points, projections, stress_available, positions, roster)
+        for roster in rosters
+    ], axis=2)
+    stress_before = simulate_team_scores(stress_base_scores, weeks, 14, 6)
     criterion = "champion" if before["playoff"][:, my_team].mean() > 0.9 else "playoffs"
     confirmed = []
     for row in screened[:30]:
-        after = evaluate_rosters(
-            points, projections, available, positions, row["rosters"], weeks, 14, 6
-        )
+        changed = (my_team, row["other_team"])
+        after_scores = base_scores.copy()
+        stress_after_scores = stress_base_scores.copy()
+        for team in changed:
+            after_scores[:, :, team] = roster_team_scores(
+                points, projections, available, positions, row["rosters"][team]
+            )
+            stress_after_scores[:, :, team] = roster_team_scores(
+                stress_points, projections, stress_available, positions,
+                row["rosters"][team],
+            )
+        after = simulate_team_scores(after_scores, weeks, 14, 6)
         mine = paired_summary(before, after, my_team)
         other = paired_summary(before, after, row["other_team"])
         verdict = trade_verdict(mine[criterion])
-        stress_after = evaluate_rosters(
-            stress_points, projections, stress_available, positions,
-            row["rosters"], weeks, 14, 6,
-        )
+        stress_after = simulate_team_scores(stress_after_scores, weeks, 14, 6)
         stress_mine = paired_summary(stress_before, stress_after, my_team)
         stress_verdict = trade_verdict(stress_mine[criterion])
         fragility, fragility_reason = fragility_label(verdict, stress_verdict)
@@ -150,7 +163,11 @@ def main():
     for gain, drop, add, updated_roster in waiver_screen[:10]:
         updated = [list(roster) for roster in rosters]
         updated[my_team] = updated_roster
-        after = evaluate_rosters(points, projections, available, positions, updated, weeks, 14, 6)
+        after_scores = base_scores.copy()
+        after_scores[:, :, my_team] = roster_team_scores(
+            points, projections, available, positions, updated_roster
+        )
+        after = simulate_team_scores(after_scores, weeks, 14, 6)
         mine = paired_summary(before, after, my_team)
         waiver_results.append({
             "gain": gain, "drop": drop, "add": add, "mine": mine,
