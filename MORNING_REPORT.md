@@ -3,84 +3,64 @@
 ## Status
 | Phase | Status | Latest result |
 |---|---|---|
-| P3 | blocked | Week-6 actuals rebuilt; rolling b/s still fails strict coverage and remains off |
-| P4 | done | DEF exempt with h=0; corrected player availability estimates retained |
-| P6 | done | Base-model worlds rebuilt from week 7 |
-| P7 | done | New lopsided sample trade returned ACCEPT |
-| P8 | done | Trade and waiver finder rerun under the 20-minute gate |
-| P9 | blocked | Rerun reproduced the stacked 6.51% calibration miss |
+| P3 | blocked | Base model retained; strict per-position coverage gate still fails |
+| P4 | done | Corrected availability model retained; DEF exempt with h=0 |
+| P6 | done | Synthetic draft now uses FantasyCalc V; worlds rebuilt from week 7 |
+| P7 | done | Acceptance now uses market package ratio; sample rerun completed |
+| P8 | done | Market-first finder rerun in 473.502 seconds |
+| P9 | blocked | Stacked worst-bin calibration error remains 6.512% |
 
-## Week-6 actual-stat rebuild
-- nflverse scoring versus Sleeper, 2026 weeks 1-5: **1,510/1,568 = 96.3010%** within 0.5 points; required threshold was 95%.
-- Accepted and cached **338** scored nflverse rows for 2026 week 6.
-- Rebuilt dataset: **43,076 player-week rows**; historical 2021-2025 training rows remain **35,741**.
-- Projection/actual scan found **22** completed team-week gaps. All 22 were bye weeks; **0** teams with scheduled games lacked actual rows.
-- Full audit: `reports/actuals_audit.md`.
+## FantasyCalc market integration
+- Cached 196 redraft rows at `2026-10-20 06:24:48 UTC`; future runs reuse one Parquet cache per Central day.
+- Joined by FantasyCalc `player.sleeperId`: 195 world players have positive V; 339 unmatched players are logged in `logs/fantasycalc_unmatched.log`.
+- Package value = highest V + 0.5 x all other V; acceptance uses r = other-team received V / given V.
+- Thresholds: LIKELY r >= 1.00; POSSIBLE 0.90-0.999; UNLIKELY below 0.90; OVERPAY above 1.25.
+- Henry for Coker + Monangai test: UNLIKELY. Exact-value swap test: LIKELY.
+- Healthy 30-day market fallers found: 45; the list is at the top of trade and waiver reports.
+- `reports/model_vs_market.md` contains the 15 largest within-position rank gaps each way among the market top 150.
 
-## P3 base-model impact of fixing week 6
-| Pos | Coverage 50 before → after | Coverage 80 before → after | Coverage 95 before → after | CRPS before → after |
-|---|---:|---:|---:|---:|
-| QB | 0.438 → 0.529 | 0.611 → 0.719 | 0.865 → 0.933 | 5.041 → 4.272 |
-| RB | 0.396 → 0.459 | 0.763 → 0.843 | 0.901 → 0.961 | 3.229 → 2.890 |
-| WR | 0.390 → 0.446 | 0.731 → 0.782 | 0.919 → 0.954 | 3.259 → 3.105 |
-| TE | 0.315 → 0.374 | 0.782 → 0.809 | 0.931 → 0.953 | 2.568 → 2.577 |
-| K | 0.434 → 0.475 | 0.676 → 0.781 | 0.841 → 0.956 | 2.997 → 2.630 |
-| DEF | 0.544 → 0.544 | 0.778 → 0.778 | 0.956 → 0.956 | 2.785 → 2.785 |
+## Key numbers
+- P3 2026 coverage 50/80/95 and CRPS: QB 0.529/0.719/0.933, 4.272; RB 0.459/0.843/0.961, 2.890.
+- WR 0.446/0.782/0.954, 3.105; TE 0.374/0.809/0.953, 2.577.
+- K 0.475/0.781/0.956, 2.630; DEF 0.544/0.778/0.956, 2.785.
+- Copula: QB1-WR1 correlation 0.313696; held-out stack variance ratio 1.141456 vs 1.544908 independent.
+- P9 Brier: overall 0.219201 copula vs 0.219208 independent; stacked 0.217772 vs 0.217796.
+- P9 worst-bin error: overall 2.557%; stacked 6.512%.
+- P6: 5,000 worlds, 534 players, 18.526 seconds; deterministic; playoff sum 6.000000000000; champion sum 1.000000000000.
 
-The rolling b/s candidate still improves sample-weighted CRPS in 3/4 seasons but fails strict per-position coverage, so the **base model remains active**. Full results: `reports/calibration.md`.
-
-## P4 availability
-- DEF only misses bye weeks: `h_DEF=0`.
-- DEF is exempt from both h/r sanity gates; `r_DEF` is unused.
-- `P(play | Out)=0.001757`, n=1,707.
-- `P(play | Questionable)=0.653141`, n=2,292.
-- Details: `reports/availability.md`.
-
-## P6 base-model worlds
-- First incomplete week: **7**.
-- Players: **534**; worlds: **5,000**.
-- Runtime: **18.695 seconds**.
-- Same-seed reproducibility: passed.
-- Sum P(playoffs): **6.000000000000**; sum P(champion): **1.000000000000**.
-
-| Team | P(playoffs) | P(bye) | P(champion) | Expected wins |
-|---|---:|---:|---:|---:|
-| Team 1 | 0.5530 | 0.1890 | 0.1056 | 3.991 |
-| Team 2 | 0.4640 | 0.1478 | 0.0718 | 3.872 |
-| Team 3 | 0.5818 | 0.2170 | 0.1130 | 4.217 |
-| Team 4 | 0.5540 | 0.2010 | 0.1112 | 4.174 |
-| Team 5 | 0.5328 | 0.1832 | 0.1026 | 4.024 |
-| Team 6 | 0.5872 | 0.2226 | 0.1038 | 4.371 |
-| Team 7 | 0.4490 | 0.1368 | 0.0596 | 3.774 |
-| Team 8 | 0.5066 | 0.1652 | 0.0530 | 4.045 |
-| Team 9 | 0.4772 | 0.1412 | 0.0878 | 3.958 |
-| Team 10 | 0.4612 | 0.1478 | 0.0878 | 3.864 |
-| Team 11 | 0.5210 | 0.1778 | 0.0654 | 4.272 |
-| Team 12 | 0.3122 | 0.0706 | 0.0384 | 3.437 |
+## Synthetic league odds
+| Team | P(playoffs) | P(champion) | Expected wins |
+|---|---:|---:|---:|
+| Team 1 | 0.6028 | 0.1178 | 4.186 |
+| Team 2 | 0.8048 | 0.1820 | 4.995 |
+| Team 3 | 0.6176 | 0.1022 | 4.461 |
+| Team 4 | 0.4948 | 0.0994 | 3.909 |
+| Team 5 | 0.5266 | 0.0830 | 4.187 |
+| Team 6 | 0.3880 | 0.0456 | 3.746 |
+| Team 7 | 0.2546 | 0.0292 | 3.177 |
+| Team 8 | 0.3844 | 0.0452 | 3.599 |
+| Team 9 | 0.5958 | 0.0942 | 4.228 |
+| Team 10 | 0.5866 | 0.0988 | 4.195 |
+| Team 11 | 0.4536 | 0.0628 | 4.042 |
+| Team 12 | 0.2904 | 0.0398 | 3.274 |
 
 ## P7 sample trade
-Team 1 gives **Rachaad White** to Team 5 for **Christian McCaffrey**:
-- Verdict: **ACCEPT**; acceptance: **UNLIKELY**.
-- Team 1 P(playoffs): **+0.2352** [0.2248, 0.2456].
-- Team 1 P(champion): **+0.1410** [0.1310, 0.1510].
-- Team 1 expected wins: **+0.8396** [0.8170, 0.8622].
+- Team 1 gives Kyler Murray to Team 8 for Christian McCaffrey.
+- Verdict: ACCEPT; market acceptance: UNLIKELY; r=0.034; other team receives V=275.0 and gives V=8016.0.
+- Team 1 playoff delta +0.2208 [0.2106, 0.2310]; other-team model playoff delta -0.2172 [−0.2275, −0.2069], info only.
 
 ## P8 finder
-- Runtime: **1,189.548 seconds**; under the 1,200-second gate.
-- Trades screened: **37,125**; WELP passes: **1,107**; confirmed: **30**.
-- Waiver pairs screened: **600**; confirmed: **10**.
-- Top trade: give Jalen Coker + Kyle Monangai for Derrick Henry; playoff gain **+0.1578**, ACCEPT/LIKELY.
-- Top waiver: add Jalen Hurts, drop Denzel Boston; playoff gain **+0.0780**, ACCEPT.
-- Final regression suite: **48 passed in 9.11s**.
+- 37,125 trades generated; 19,648 passed r >= 0.90; 322 passed WELP; top 30 confirmed; 30 ACCEPT trades reported.
+- 600 waiver pairs screened; top 10 confirmed.
+- Top trade: give Joe Burrow + Marvin Harrison for Bhayshul Tuten; r=0.950; playoff gain +0.1254; ACCEPT/POSSIBLE.
+- Final suite: 53 passed in 9.19 seconds.
 
-## P9 matchup calibration
-- Overall Brier: copula **0.219201**, independent **0.219208**; worst copula bin **2.557%**.
-- Stacked Brier: copula **0.217772**, independent **0.217796**; worst copula bin **6.512%**.
-- Stacked offending bin remains 360 pairs, not low sample.
-- P9 remains blocked on the 5% stacked-bin gate.
-
-## Remaining defaults/blockers
+## Assumptions and blockers
+- Yahoo remains disconnected; synthetic league settings remain active.
+- Jalen Hurts override says out with weeks TBD and note `blood clot`; it was not applied and needs Diego's weeks-out input.
+- P3 remains blocked on strict coverage; P9 remains blocked on stacked calibration.
 - `r_IR=0.25`, `kappa=0.75`, and WR/TE/RB beta defaults remain due insufficient samples.
-- P3 remains blocked on strict coverage.
-- P9 remains blocked on stacked calibration.
-- Yahoo remains disconnected; synthetic league settings are still in use.
+
+## What Diego needs to do
+1. Set Jalen Hurts' expected weeks out in `overrides.yaml`.
+2. Connect Yahoo using `docs/YAHOO_SETUP.md` when API approval is available.

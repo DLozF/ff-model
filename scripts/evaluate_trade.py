@@ -10,11 +10,19 @@ import polars as pl
 
 from ffm.config import load_config
 from ffm.lineup import greedy
+from ffm.market import (
+    acceptance_label,
+    healthy_market_fallers,
+    load_market,
+    market_ratio,
+    news_lines,
+    package_value,
+)
 from ffm.trade import (
     apply_trade, evaluate_rosters, fuzzy_match, metric_delta, roster_lineup_points,
     trade_verdict,
 )
-from ffm.worlds import load_world_directory
+from ffm.worlds import load_injury_overrides, load_world_directory
 
 ROOT = Path("/opt/data/ff-model")
 
@@ -58,14 +66,32 @@ def interval_text(value):
 
 def write_report(
     path, league, names, weeks, before, after, summaries, my_team, other_team,
-    verdict, acceptance, adjustments, exposure_before, exposure_after,
+    verdict, acceptance, adjustments, exposure_before, exposure_after, ratio,
+    other_receives_value, other_gives_value, news, pending_overrides,
 ):
     """Write a trade decision report."""
     lines = [
         f"# Trade evaluation: {league['teams'][other_team]}", "",
-        f"- Verdict for {league['teams'][my_team]}: **{verdict}**",
-        f"- Other-team acceptance: **{acceptance}**", "",
+        *news_lines(news),
+        "## Injury overrides needing Diego's input", "",
     ]
+    if pending_overrides:
+        lines.extend(
+            f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
+            for row in pending_overrides
+        )
+    else:
+        lines.append("- None.")
+    lines.extend([
+        "", "## Decision", "",
+        f"- Verdict for {league['teams'][my_team]}: **{verdict}**",
+        f"- Other-team acceptance: **{acceptance}**",
+        f"- Market ratio r: **{ratio:.3f}**{' — OVERPAY' if ratio > 1.25 else ''}",
+        f"- Other team receives V: **{other_receives_value:.1f}**",
+        f"- Other team gives V: **{other_gives_value:.1f}**",
+        f"- Other-team model playoff delta (info only): "
+        f"**{summaries[other_team]['playoffs']['mean']:+.4f}**", "",
+    ])
     for team in (my_team, other_team):
         lines.extend([
             f"## {league['teams'][team]}", "",
@@ -105,11 +131,18 @@ def main():
     projections = np.load(world_dir / "proj_seen.npy", mmap_mode="r")
     weeks = np.load(world_dir / "week_numbers.npy").tolist()
     players = pl.read_parquet(world_dir / "player_index.parquet")
+    market = load_market(ROOT / "data/cache")
+    sleeper_players = pl.read_parquet(ROOT / "data/cache/sleeper_players.parquet")
+    news = healthy_market_fallers(market, sleeper_players)
     league = json.loads((ROOT / "models/synthetic_league.json").read_text())
     names = players.get_column("name").fill_null(players.get_column("player_id")).to_list()
     positions = players.get_column("position").to_numpy()
     nfl_teams = players.get_column("team").to_numpy()
     ros_points = players.get_column("ros_points").to_numpy()
+    market_lookup = dict(zip(market.get_column("sleeper_id"), market.get_column("market_value")))
+    player_values = np.array([
+        market_lookup.get(str(player_id), 0.0) for player_id in players.get_column("player_id")
+    ])
     my_team = league["teams"].index(config["league"]["my_team"])
     other_team = league["teams"].index(args.team)
     give = [fuzzy_match(name, names) for name in parse_names(args.give)]
@@ -134,8 +167,14 @@ def main():
     }
     criterion = "champion" if before["playoff"][:, my_team].mean() > 0.9 else "playoffs"
     verdict = trade_verdict(summaries[my_team][criterion])
-    other_delta = summaries[other_team]["playoffs"]["mean"]
-    acceptance = "LIKELY" if other_delta > 0 else "POSSIBLE" if other_delta > -0.01 else "UNLIKELY"
+    other_receives_value = package_value(player_values[give])
+    other_gives_value = package_value(player_values[get])
+    ratio = market_ratio(other_receives_value, other_gives_value)
+    acceptance = acceptance_label(ratio)
+    overrides = load_injury_overrides(ROOT / "overrides.yaml")
+    pending_overrides = [
+        row for row in overrides if str(row.get("weeks", "")).upper() == "TBD"
+    ]
     before_exposure = exposure(
         points, projections, available, positions, nfl_teams, league["rosters"][my_team]
     )
@@ -145,9 +184,13 @@ def main():
     path = ROOT / "reports" / f"trade_{date}_{slug}.md"
     write_report(
         path, league, names, weeks, before, after, summaries, my_team, other_team,
-        verdict, acceptance, adjustments, before_exposure, after_exposure,
+        verdict, acceptance, adjustments, before_exposure, after_exposure, ratio,
+        other_receives_value, other_gives_value, news, pending_overrides,
     )
-    print(f"Verdict: {verdict}; acceptance: {acceptance}")
+    print(
+        f"Verdict: {verdict}; acceptance: {acceptance}; r={ratio:.3f}; "
+        f"other receives V={other_receives_value:.1f}; gives V={other_gives_value:.1f}"
+    )
     print(f"Report: {path}")
 
 

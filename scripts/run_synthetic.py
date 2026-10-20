@@ -9,8 +9,14 @@ from ffm.config import load_config
 from ffm.distributions import QuantileModel
 from ffm.ids import normalize_team
 from ffm.league import synthetic_draft
+from ffm.market import join_market, load_market, write_model_vs_market
 from ffm.season import simulate_season
-from ffm.worlds import generate_worlds, weighted_recent_projection, write_world_manifest
+from ffm.worlds import (
+    generate_worlds,
+    load_injury_overrides,
+    weighted_recent_projection,
+    write_world_manifest,
+)
 
 ROOT = Path("/opt/data/ff-model")
 CACHE = ROOT / "data/cache"
@@ -96,7 +102,7 @@ def schedule_inputs(schedules, weeks, players):
     return bye, games
 
 
-def write_report(league, result, runtime, reproducible, teams):
+def write_report(league, result, runtime, reproducible, teams, pending_overrides):
     """Write synthetic league odds."""
     lines = [
         "# Synthetic league odds", "",
@@ -111,6 +117,14 @@ def write_report(league, result, runtime, reproducible, teams):
             f"{result['bye_probability'][index]:.4f} | {result['champion_probability'][index]:.4f} | "
             f"{result['expected_wins'][index]:.3f} | {result['expected_points_for'][index]:.2f} |"
         )
+    lines.extend(["", "## Injury overrides needing Diego's input", ""])
+    if pending_overrides:
+        for row in pending_overrides:
+            lines.append(
+                f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
+            )
+    else:
+        lines.append("- None.")
     (ROOT / "reports/league_odds.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -123,11 +137,19 @@ def main():
     history = load_projection_history(2026)
     sleeper_players = pl.read_parquet(CACHE / "sleeper_players.parquet")
     players, projections = prepare_players(history, weeks, sleeper_players)
+    market = load_market(CACHE)
+    players = join_market(players, market, "player_id", ROOT / "logs/fantasycalc_unmatched.log")
+    write_model_vs_market(players, market, ROOT / "reports/model_vs_market.md")
     bye, games = schedule_inputs(schedules, weeks, players)
     positions = players.get_column("position").to_numpy()
     teams = players.get_column("team").to_numpy()
     statuses = players.get_column("injury_status").to_numpy()
     statuses = np.array([status or "none" for status in statuses])
+    player_names = players.get_column("name").fill_null(players.get_column("player_id")).to_numpy()
+    overrides = load_injury_overrides(ROOT / "overrides.yaml")
+    pending_overrides = [
+        row for row in overrides if str(row.get("weeks", "")).upper() == "TBD"
+    ]
     model = QuantileModel.load(ROOT / "models/quantiles_2026.npz")
     availability = json.loads((ROOT / "models/availability.json").read_text())
     qb_effect = json.loads((ROOT / "models/qb_effect.json").read_text())
@@ -135,7 +157,7 @@ def main():
 
     draft_players = players.select(
         pl.col("player_id").alias("sleeper_id"), "name",
-        pl.col("position").alias("pos"), "ros_points",
+        pl.col("position").alias("pos"), "ros_points", "market_value",
     )
     league = synthetic_draft(draft_players, teams=config["league"]["teams"], roster_size=15)
     league["player_ids"] = players.get_column("player_id").to_list()
@@ -143,11 +165,11 @@ def main():
 
     small_a = generate_worlds(
         projections, bye, positions, teams, statuses, games, model, availability,
-        qb_effect, sigma, 50, config["sim"]["seed"],
+        qb_effect, sigma, 50, config["sim"]["seed"], player_names, overrides,
     )
     small_b = generate_worlds(
         projections, bye, positions, teams, statuses, games, model, availability,
-        qb_effect, sigma, 50, config["sim"]["seed"],
+        qb_effect, sigma, 50, config["sim"]["seed"], player_names, overrides,
     )
     reproducible = all(np.array_equal(left, right) for left, right in zip(small_a, small_b))
 
@@ -155,6 +177,7 @@ def main():
     points, available, proj_seen = generate_worlds(
         projections, bye, positions, teams, statuses, games, model, availability,
         qb_effect, sigma, config["sim"]["n_final"], config["sim"]["seed"],
+        player_names, overrides,
     )
     result = simulate_season(
         points, proj_seen, available, positions, league["rosters"], weeks,
@@ -175,7 +198,9 @@ def main():
         wins=result["wins"], points_for=result["points_for"],
         team_week_scores=result["team_week_scores"],
     )
-    write_report(league, result, runtime, reproducible, league["teams"])
+    write_report(
+        league, result, runtime, reproducible, league["teams"], pending_overrides,
+    )
     print(f"first incomplete week: {first_week}")
     print(f"players: {players.height}; worlds: {config['sim']['n_final']}")
     print(f"runtime_seconds: {runtime:.3f}")

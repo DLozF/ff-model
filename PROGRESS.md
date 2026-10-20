@@ -9,9 +9,9 @@
 | P3 | blocked | Rolling b/s candidate improved CRPS in 3/4 seasons but failed strict coverage; not adopted |
 | P4 | done | DEF exempt with h=0; corrected player h/r and injury-status estimates retained |
 | P5 | done | QB1-WR1 r=0.3137; held-out stack variance ratio=1.1415 |
-| P6 | done | Week-7 start; 5,000 worlds + season in 18.695s; probability sums exact |
-| P7 | done | Rachaad White for Christian McCaffrey => ACCEPT |
-| P8 | done | 37,125 trades + 600 waivers in 1,189.548s; both 2026-10-20 reports saved |
+| P6 | done | FantasyCalc-V draft; week-7 start; 5,000 worlds + season in 18.526s |
+| P7 | done | Market-ratio acceptance; Kyler Murray for Christian McCaffrey => ACCEPT/UNLIKELY |
+| P8 | done | Market-first 37,125-trade finder completed in 473.502s |
 | P9 | blocked | Copula Brier wins overall/stacked; stacked worst decile error 6.51% |
 | P10 | done | Fake Yahoo JSON test passes; live and CSV loaders documented |
 | P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
@@ -22,7 +22,8 @@
 - `pulp_lineup` uses SciPy's MILP backend because installed PuLP 4.1 has no available solver binary.
 - P4 corrected empirical h/r estimates are used for QB/RB/WR/TE/K. DEF is exempt because defenses only miss bye weeks: h_DEF=0 and r_DEF is unused.
 - Historical IR transitions were unavailable; r_IR=0.25. QB replacement sample was 0, so kappa=0.75 and beta defaults WR/TE=0.6, RB=0.3.
-- P8 used raw post-trade roster WELP as a fast pre-screen, then applied exact roster balancing and WELP before full confirmation.
+- P8 applies FantasyCalc r >= 0.90 before raw post-trade roster WELP, then exact roster balancing and top-30 confirmation.
+- FantasyCalc-unmatched players receive V=0 and are written to `logs/fantasycalc_unmatched.log`.
 - Yahoo Fantasy API access currently requires manual approval before OAuth app use; setup documentation includes the approval step.
 
 ## Blocked
@@ -74,3 +75,14 @@
 - P8 base-model rerun: 37,125 candidates, 1,107 WELP passes, 30 confirmed trades, 10 confirmed waivers; solo runtime 1,189.548s (<20 minutes).
 - P9 base-model rerun reproduced overall Brier 0.219201 copula vs 0.219208 independent and stacked 0.217772 vs 0.217796; stacked worst-bin error remains 0.065119.
 - Final follow-up regression suite: 48 passed in 9.11s; rebuilt dataset verification returned 43,076 rows and 96.9689% scoring agreement.
+- FantasyCalc: inspected 196 live redraft rows and cached them once for 2026-10-20 with a UTC fetch timestamp; schema recorded in docs/data_schema.md.
+- Market join: 195 of 534 world players had positive V; 339 unmatched players were logged.
+- Market acceptance tests: Henry for Coker + Monangai is UNLIKELY; an exact-value swap is LIKELY.
+- Injury override test: a weeks=TBD override leaves availability unchanged.
+- P6 market-draft rerun: 534 players, 5,000 worlds, 18.526s, deterministic; playoff sum=6 and champion sum=1.
+- Jalen Hurts weeks=TBD override was not applied and is listed in generated reports as needing Diego's input.
+- P7 market sample: Kyler Murray for Christian McCaffrey => ACCEPT/UNLIKELY, r=0.034, other receives V=275.0 and gives V=8016.0.
+- P8 market-first rerun: 37,125 candidates, 19,648 market passes, 322 WELP passes, 30 confirmed trades, 10 waivers; runtime 473.502s.
+- News check found 45 healthy players with trend30Day below -25% of V; list added to trade and waiver report tops.
+- Model-vs-market report saved with the 15 largest within-position gaps each way among the top 150 by V.
+- Final FantasyCalc regression suite: 53 passed in 9.19s; script compilation and `git diff --check` passed.

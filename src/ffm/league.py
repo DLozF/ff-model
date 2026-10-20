@@ -2,21 +2,11 @@ import numpy as np
 import polars as pl
 from pathlib import Path
 
-REPLACEMENT_RANK = {"QB": 12, "RB": 28, "WR": 28, "TE": 16, "K": 12, "DEF": 12}
 BASE_NEEDS = {"QB": 1, "RB": 2, "WR": 2, "TE": 1, "K": 1, "DEF": 1}
 
 
 def _draft_values(players: pl.DataFrame) -> np.ndarray:
-    positions = players.get_column("pos").to_numpy()
-    points = players.get_column("ros_points").to_numpy()
-    values = np.empty(players.height)
-    for position in REPLACEMENT_RANK:
-        indices = np.flatnonzero(positions == position)
-        ordered = indices[np.argsort(points[indices])[::-1]]
-        rank = min(REPLACEMENT_RANK[position] - 1, ordered.size - 1)
-        replacement = points[ordered[rank]]
-        values[indices] = points[indices] - replacement
-    return values
+    return players.get_column("market_value").fill_null(0.0).to_numpy()
 
 
 def _starter_slot(position: str, counts: dict[str, int], flex: int) -> str | None:
@@ -28,7 +18,7 @@ def _starter_slot(position: str, counts: dict[str, int], flex: int) -> str | Non
 
 
 def synthetic_draft(players: pl.DataFrame, teams: int = 12, roster_size: int = 15) -> dict:
-    """Snake-draft a synthetic league by value over replacement."""
+    """Snake-draft a synthetic league by FantasyCalc market value."""
     positions = players.get_column("pos").to_numpy()
     values = _draft_values(players)
     order = np.argsort(values)[::-1]
@@ -69,7 +59,7 @@ def synthetic_draft(players: pl.DataFrame, teams: int = 12, roster_size: int = 1
         "teams": [f"Team {index + 1}" for index in range(teams)],
         "rosters": rosters,
         "free_agents": np.flatnonzero(available).tolist(),
-        "vor": values.tolist(),
+        "market_values": values.tolist(),
     }
 
 

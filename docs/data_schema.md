@@ -45,3 +45,9 @@ Columns were inspected from the cached real datasets before loader code was writ
 ## player_weeks
 - Rows in inspected cache: 43067
 - Columns (11): `season`, `week`, `sleeper_id`, `gsis_id`, `name`, `pos`, `team`, `opp`, `proj_pts`, `act_pts`, `played`
+
+## FantasyCalc current redraft values
+- Endpoint inspected 2026-10-20; rows: 196. The first three players were Jahmyr Gibbs, Bijan Robinson, and Jaxon Smith-Njigba.
+- Top-level keys: `combinedValue`, `displayTrend`, `maybeAdp`, `maybeMovingStandardDeviation`, `maybeMovingStandardDeviationAdjusted`, `maybeMovingStandardDeviationPerc`, `maybeOwner`, `maybeRosterPercent`, `maybeTier`, `maybeTradeFrequency`, `overallRank`, `player`, `positionRank`, `redraftDynastyValueDifference`, `redraftDynastyValuePercDifference`, `redraftValue`, `starter`, `trend30Day`, `value`.
+- Player keys: `espnId`, `ffpcId`, `fleaflickerId`, `id`, `maybeAge`, `maybeBirthday`, `maybeCollege`, `maybeDraftInfo`, `maybeHeight`, `maybeTeam`, `maybeWeight`, `maybeYoe`, `mflId`, `name`, `position`, `sleeperId`.
+- Daily Parquet cache columns used by the model: `fetched_at`, `redraftValue`, `trend30Day`, `overallRank`, `positionRank`, `player_sleeperId`, `player_name`, `player_position`, `player_team`.

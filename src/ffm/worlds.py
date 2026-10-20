@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import yaml
 from scipy.stats import norm
 
 
@@ -23,6 +24,41 @@ def write_world_manifest(path: str | Path, world_dir: str | Path, first_week: in
 def load_world_directory(path: str | Path) -> Path:
     """Load the active saved-world directory from its manifest."""
     return Path(json.loads(Path(path).read_text(encoding="utf-8"))["world_dir"])
+
+
+def load_injury_overrides(path: str | Path) -> list[dict]:
+    """Load manually supplied player availability overrides."""
+    source = Path(path)
+    if not source.exists():
+        return []
+    payload = yaml.safe_load(source.read_text(encoding="utf-8")) or {}
+    if isinstance(payload, list):
+        return payload
+    return payload.get("overrides", [])
+
+
+def apply_initial_overrides(probabilities, names, overrides):
+    """Apply numeric play probabilities and weeks-out overrides."""
+    adjusted = np.asarray(probabilities, dtype=float).copy()
+    weeks_out = np.zeros(adjusted.size, dtype=int)
+    pending = []
+    lookup = {str(name).casefold(): index for index, name in enumerate(names)}
+    for override in overrides:
+        weeks = override.get("weeks", override.get("weeks_out"))
+        if isinstance(weeks, str) and weeks.upper() == "TBD":
+            pending.append(override)
+            continue
+        index = lookup.get(str(override.get("name", "")).casefold())
+        if index is None:
+            continue
+        probability = override.get(
+            "P(play)", override.get("p_play", override.get("play_probability"))
+        )
+        if probability is not None:
+            adjusted[index] = float(probability)
+        if isinstance(weeks, int) and weeks > 0:
+            weeks_out[index] = weeks
+    return adjusted, weeks_out, pending
 
 
 def _initial_probabilities(positions, statuses, availability):
@@ -101,6 +137,8 @@ def generate_worlds(
     sigma: np.ndarray,
     n_worlds: int,
     seed: int,
+    player_names: np.ndarray | None = None,
+    overrides: list[dict] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Generate correlated points, availability, and seen projections."""
     rng = np.random.default_rng(seed)
@@ -109,6 +147,9 @@ def generate_worlds(
     available_output = np.empty((weeks, n_worlds, players), dtype=bool)
     seen_output = np.empty((weeks, n_worlds, players), dtype=np.float32)
     initial = _initial_probabilities(positions, injury_status, availability)
+    override_weeks = np.zeros(players, dtype=int)
+    if player_names is not None and overrides:
+        initial, override_weeks, _ = apply_initial_overrides(initial, player_names, overrides)
     health = rng.random((n_worlds, players)) < initial
     h = np.array([availability["markov"][position]["h"] for position in positions])
     r = np.array([availability["markov"][position]["r"] for position in positions])
@@ -117,7 +158,7 @@ def generate_worlds(
         if week:
             draws = rng.random((n_worlds, players))
             health = np.where(health, draws >= h, draws < r)
-        available = health & ~bye[week][None, :]
+        available = health & ~bye[week][None, :] & (override_weeks <= week)[None, :]
         proj_seen = np.broadcast_to(projections[week], (n_worlds, players)).copy()
         proj_seen = _adjust_for_backup_qbs(
             proj_seen, available, projections[week], positions, teams, qb_effect
