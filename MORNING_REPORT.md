@@ -1,5 +1,10 @@
 # Morning report: 2026-10-20
 
+## Overnight run
+- `OVERNIGHT.md` was received at 07:23 Central, after its 07:00 experiment cutoff.
+- Safety tag and branch were created, but the experiment queue was not started to preserve the 07:30 reporting deadline.
+- Details: `reports/overnight_summary.md`.
+
 ## Status
 | Phase | Status | Latest result |
 |---|---|---|

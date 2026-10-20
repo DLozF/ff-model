@@ -86,3 +86,5 @@
 - News check found 45 healthy players with trend30Day below -25% of V; list added to trade and waiver report tops.
 - Model-vs-market report saved with the 15 largest within-position gaps each way among the top 150 by V.
 - Final FantasyCalc regression suite: 53 passed in 9.19s; script compilation and `git diff --check` passed.
+- Overnight 2026-10-20: instructions arrived at 07:23 Central, after the 07:00 experiment cutoff; queue was not started.
+- Overnight safety: created tag `pre-overnight-2026-10-20` and branch `overnight-2026-10-20`; summary saved to reports/overnight_summary.md.
