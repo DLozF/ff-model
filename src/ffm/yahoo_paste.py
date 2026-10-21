@@ -41,6 +41,39 @@ def normalize_player_name(name: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
 
+def parse_available_text(text: str) -> tuple[pl.DataFrame, list[str]]:
+    """Parse concatenated Yahoo available-player pages and return unparsed lines."""
+    pattern = re.compile(
+        r"^(?P<name>.+?)(?:No new player Notes?|New Player Note|Player Note)\s+"
+        r"(?P<team>[A-Za-z]{2,3})\s*-\s*(?P<pos>QB|RB|WR|TE|K|DEF)\b",
+        re.IGNORECASE,
+    )
+    records = []
+    unparsed = []
+    seen = set()
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        match = pattern.search(line)
+        if not match:
+            unparsed.append(line)
+            continue
+        name = re.sub(
+            r"(?:IR-R|IR|PUP|NA|Q|D|O)$", "", match.group("name").strip()
+        ).strip()
+        record = {
+            "name": name,
+            "nfl_team": normalize_team(match.group("team")),
+            "pos": match.group("pos").upper(),
+        }
+        key = (normalize_player_name(name), record["nfl_team"], record["pos"])
+        if key not in seen:
+            records.append(record)
+            seen.add(key)
+    return pl.from_dicts(records, infer_schema_length=None), unparsed
+
+
 def _rows(text: str) -> dict[str, str]:
     result = {}
     for line in text.splitlines():

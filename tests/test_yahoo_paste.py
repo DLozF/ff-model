@@ -2,7 +2,10 @@ from pathlib import Path
 
 import polars as pl
 
-from ffm.yahoo_paste import match_roster, normalize_player_name, parse_roster_text, parse_settings_text
+from ffm.yahoo_paste import (
+    match_roster, normalize_player_name, parse_available_text, parse_roster_text,
+    parse_settings_text,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -45,3 +48,17 @@ def test_parse_roster_and_match_normalized_names():
     assert matched.filter(pl.col("name") == "Sample Runner III").item(0, "match_method") == "name+position+team"
     assert unmatched.is_empty()
     assert matched.filter(pl.col("slot") == "D").item(0, "model_excluded") is True
+
+
+def test_parse_available_text_handles_concatenated_yahoo_pages():
+    available, unparsed = parse_available_text(
+        (FIXTURES / "yahoo_available_fake.txt").read_text()
+    )
+
+    assert available.to_dicts() == [
+        {"name": "Alpha Runner", "nfl_team": "SEA", "pos": "RB"},
+        {"name": "Beta Catcher", "nfl_team": "NE", "pos": "WR"},
+        {"name": "Gamma Stash", "nfl_team": "NO", "pos": "WR"},
+        {"name": "Comets", "nfl_team": "DEN", "pos": "DEF"},
+    ]
+    assert "This line cannot be parsed" in unparsed

@@ -21,6 +21,10 @@ def synthetic_draft(players: pl.DataFrame, teams: int = 12, roster_size: int = 1
     """Snake-draft a synthetic league by FantasyCalc market value."""
     positions = players.get_column("pos").to_numpy()
     values = _draft_values(players)
+    ros = (
+        players.get_column("ros_points").fill_null(0.0).to_numpy()
+        if "ros_points" in players.columns else values
+    )
     order = np.argsort(values)[::-1]
     available = np.ones(players.height, dtype=bool)
     rosters = [[] for _ in range(teams)]
@@ -43,7 +47,11 @@ def synthetic_draft(players: pl.DataFrame, teams: int = 12, roster_size: int = 1
                     if position in {"K", "DEF"}:
                         continue
                     slot = "BENCH"
-                choice = int(player)
+                if position in {"K", "DEF"}:
+                    specialists = np.flatnonzero(available & (positions == position))
+                    choice = int(specialists[np.argmax(ros[specialists])])
+                else:
+                    choice = int(player)
                 chosen_slot = slot
                 break
             if choice is None:

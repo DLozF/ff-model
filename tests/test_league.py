@@ -60,3 +60,27 @@ def test_partial_synthetic_league_keeps_real_roster_and_avoids_duplicates():
     assert league["rosters"][0] == [0, 30, 110, 200, 240, 265]
     assert len(drafted) == len(set(drafted))
     assert not set(league["rosters"][0]) & set(player for roster in league["rosters"][1:] for player in roster)
+
+
+def test_synthetic_draft_uses_top_projected_kickers_and_defenses():
+    positions = np.array(
+        ["QB"] * 2 + ["RB"] * 5 + ["WR"] * 5 + ["TE"] * 3
+        + ["K"] * 4 + ["DEF"] * 4
+    )
+    ros = np.arange(len(positions), dtype=float)
+    market = np.arange(len(positions), dtype=float)[::-1]
+    players = pl.DataFrame({
+        "sleeper_id": [str(i) for i in range(len(positions))],
+        "name": [f"P{i}" for i in range(len(positions))],
+        "pos": positions,
+        "ros_points": ros,
+        "market_value": market,
+    })
+
+    league = synthetic_draft(players, teams=2, roster_size=9)
+    drafted = {player for roster in league["rosters"] for player in roster}
+    top_k = set(np.flatnonzero(positions == "K")[np.argsort(ros[positions == "K"])[-2:]])
+    top_def = set(np.flatnonzero(positions == "DEF")[np.argsort(ros[positions == "DEF"])[-2:]])
+
+    assert top_k <= drafted
+    assert top_def <= drafted

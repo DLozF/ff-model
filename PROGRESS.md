@@ -19,6 +19,7 @@
 | T02 | done | Blend backtest rejected; explainers built; scorecard and misses written |
 | T03 | done | FantasyCalc fallback fixed; daily and waiver jobs verified live |
 | T04-1 | done | Market faller percentages use prior value; reports scoped and reordered |
+| T04-2 | done | Distinct waiver adds, drop protection, priority gate, and tolerant Yahoo pool parser |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -30,6 +31,7 @@
 - FantasyCalc-unmatched players receive V=0 and are written to `logs/fantasycalc_unmatched.log`.
 - Yahoo Fantasy API access currently requires manual approval before OAuth app use; setup documentation includes the approval step.
 - T04 Item 1 treats the top 15 waiver targets as the 15 free agents with the highest rest-of-season projection.
+- T04 Item 2 treats an IR player's positive market value as evidence of an expected return; IR players at V=0 are droppable as out for the season.
 
 ## Blocked
 - P3 calibration gate: after rebuilding 2026 week 6 from nflverse actuals, the rolling eight-week b/s candidate improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025, and still failed the every-position coverage gate. It was not adopted. Full results: reports/calibration.md.
@@ -122,3 +124,4 @@
 - T03 A4: daily report shows latest weekly 80% coverage by position; QB was 82.8% on 29 played week-6 rows. QB E5 remains deferred until eight completed 2026 weeks.
 - T03 automation: live daily completed in 124.493s; live waivers completed in 165.037s with 10 enriched moves. Both failure markers were cleared after success.
 - T04 Item 1: prior-value percentage changes replace current-value division; V=37/trend=-181 is -83.03%. Current scoped news fell from 47 league-wide names to 3 roster/top-15 waiver names, capped at 10. Trade and waiver moves now precede injury/news sections, with news last.
+- T04 Item 2: prior report had 10 rows but only 5 distinct adds. The rebuilt estimated pool gives all 11 synthetic opponents exactly one K and one DEF; the current protected run screened 680 pairs and found 0 qualifying distinct adds. Fresh `available.txt` pages are now the exclusive pool, with unparsed/unmatched lines logged. Rolling priority requires playoff gain >=0.03 plus a starting or bye-week role.

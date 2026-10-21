@@ -8,3 +8,4 @@
 - Error-analysis pattern: low-bucket QB and DEF projections run high (DEF mid-bucket bias +4.41 points) and high-bucket TE projections run low (-1.47). A bias correction per bucket is a candidate future experiment.
 - Fix test data, do not add debug prints or rerun pytest repeatedly.
 - Percent change uses the prior value as the base.
+- Drop protection can legitimately leave fewer than 10 waiver recommendations; never backfill the report with protected or duplicate drops.
