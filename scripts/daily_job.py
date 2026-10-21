@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -82,9 +83,24 @@ def refresh_data(root: Path, season: int) -> dict:
         except RuntimeError:
             continue
     load_market(cache)
-    if new_stats:
-        subprocess.run([sys.executable, str(root / "scripts/build_dataset.py")], check=True)
-    return {"state": state, "completed": completed, "new_stats": new_stats, "future": future}
+    player_weeks_path = cache / "player_weeks.parquet"
+    built_through = 0
+    if player_weeks_path.exists():
+        built = pl.read_parquet(player_weeks_path, columns=["season", "week"])
+        season_rows = built.filter(pl.col("season") == season)
+        if not season_rows.is_empty():
+            built_through = int(season_rows.get_column("week").max())
+    needs_rebuild = max(completed, default=0) > built_through
+    if new_stats or needs_rebuild:
+        env = {**os.environ, "PYTHONPATH": str(root / "src")}
+        subprocess.run(
+            [sys.executable, str(root / "scripts/build_dataset.py")],
+            check=True, env=env,
+        )
+    return {
+        "state": state, "completed": completed, "new_stats": new_stats,
+        "future": future, "dataset_rebuilt": bool(new_stats or needs_rebuild),
+    }
 
 
 def injury_snapshot(players: pl.DataFrame) -> pl.DataFrame:

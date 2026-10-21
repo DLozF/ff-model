@@ -1,6 +1,6 @@
 # Daily fantasy report: 2026-10-21
 
-- Mode: cached dry-run
+- Mode: live refresh
 - Current model week: 7
 - Completed regular-season weeks: 1, 2, 3, 4, 5, 6
 - Newly cached Sleeper stats: none
@@ -71,4 +71,4 @@ Opponent: Team 12
 - Week 6 K 80% coverage: 76.0% (n=25).
 - Week 6 DEF 80% coverage: no played players.
 
-Runtime: 0.290 seconds.
+Runtime: 123.484 seconds.

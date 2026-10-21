@@ -17,6 +17,7 @@
 | P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
 | T01 | done | Partial Yahoo import: league scoring refit, real roster in, P6/P8 rebuilt |
 | T02 | done | Blend backtest rejected; explainers built; scorecard and misses written |
+| T03 | done | FantasyCalc fallback fixed; daily and waiver jobs verified live |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -115,3 +116,6 @@
 - T02: leakage, scoring, and determinism tests added; suite passed with `scripts/check.sh`. Assumption: `data/yahoo_paste/history/` absent, so Yahoo Fan-Pts cross-check was skipped.
 - T03 A5 assumption: a `countered` offer counts as not accepted as proposed for the binary acceptance model. LIKELY uses fitted P(accepted)>=50% and POSSIBLE uses >=25% once 20 resolved offers exist; until then the original r=1.00/0.90 cutoffs remain active.
 - T03 A5: `data/trade_log.csv` initialized locally and ignored by git; `scripts/log_trade.py` appends offers. Current status is 0/20 resolved, so reports retain the default acceptance thresholds.
+- T03 A2: live world now has 535 players: 195 FantasyCalc, 272 model fallback, and 68 out. Full P8 comparison rerun produced 44,880 candidates, 24,184 market passes, 260 WELP passes, 30 trades, and 10 waivers in 551.802s.
+- T03 A4: daily report shows latest weekly 80% coverage by position; QB was 82.8% on 29 played week-6 rows. QB E5 remains deferred until eight completed 2026 weeks.
+- T03 automation: live daily completed in 124.493s; live waivers completed in 165.037s with 10 enriched moves. Both failure markers were cleared after success.

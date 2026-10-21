@@ -6,40 +6,40 @@ Top 150 players by FantasyCalc redraft value.
 
 | Player | Pos | V | Model rank | Market rank | Gap |
 |---|---|---:|---:|---:|---:|
-| Marvin Harrison | WR | 908 | 123 | 38 | +85 |
-| Cam Skattebo | RB | 1504 | 72 | 26 | +46 |
-| Brian Thomas | WR | 353 | 93 | 53 | +40 |
+| Marvin Harrison | WR | 908 | 125 | 38 | +87 |
+| Cam Skattebo | RB | 1504 | 70 | 26 | +44 |
+| Brian Thomas | WR | 353 | 95 | 53 | +42 |
 | Devaughn Vele | WR | 674 | 76 | 40 | +36 |
-| Emanuel Wilson | RB | 621 | 74 | 40 | +34 |
-| Dameon Pierce | RB | 361 | 80 | 46 | +34 |
+| Emanuel Wilson | RB | 621 | 72 | 40 | +32 |
+| Dameon Pierce | RB | 361 | 78 | 46 | +32 |
 | Ja'Kobi Lane | WR | 216 | 84 | 57 | +27 |
-| Tyler Higbee | TE | 359 | 34 | 16 | +18 |
-| Jadarian Price | RB | 419 | 63 | 45 | +18 |
-| Kyle Pitts | TE | 697 | 29 | 12 | +17 |
-| Kendre Miller | RB | 266 | 66 | 49 | +17 |
-| Malik Nabers | WR | 5455 | 23 | 7 | +16 |
-| Keenan Allen | WR | 532 | 59 | 44 | +15 |
-| George Pickens | WR | 3400 | 29 | 16 | +13 |
-| Brian Robinson | RB | 284 | 61 | 48 | +13 |
+| Davante Adams | WR | 1977 | 50 | 26 | +24 |
+| Romeo Doubs | WR | 217 | 80 | 56 | +24 |
+| Jadarian Price | RB | 419 | 64 | 45 | +19 |
+| Kyle Pitts | TE | 697 | 28 | 12 | +16 |
+| Kendre Miller | RB | 266 | 65 | 49 | +16 |
+| George Pickens | WR | 3400 | 30 | 16 | +14 |
+| Keenan Allen | WR | 532 | 57 | 44 | +13 |
+| Malik Nabers | WR | 5455 | 19 | 7 | +12 |
 
 ## Model ranks higher than market
 
 | Player | Pos | V | Model rank | Market rank | Gap |
 |---|---|---:|---:|---:|---:|
-| Malik Washington | WR | 394 | 35 | 51 | -16 |
-| Wan'Dale Robinson | WR | 496 | 33 | 46 | -13 |
+| Wan'Dale Robinson | WR | 496 | 32 | 46 | -14 |
+| Jakobi Meyers | WR | 405 | 36 | 49 | -13 |
+| Malik Washington | WR | 394 | 38 | 51 | -13 |
+| Chris Godwin | WR | 302 | 41 | 54 | -13 |
 | Ollie Gordon | RB | 1254 | 15 | 27 | -12 |
-| Mike Evans | WR | 2392 | 10 | 21 | -11 |
-| Jakobi Meyers | WR | 405 | 38 | 49 | -11 |
-| Chris Godwin | WR | 302 | 43 | 54 | -11 |
-| Rashee Rice | WR | 2012 | 15 | 25 | -10 |
-| Davante Adams | WR | 1977 | 17 | 26 | -9 |
-| Tony Pollard | RB | 1015 | 26 | 35 | -9 |
-| Bo Nix | QB | 268 | 13 | 21 | -8 |
-| Romeo Doubs | WR | 217 | 48 | 56 | -8 |
-| Jacory Croskey-Merritt | RB | 319 | 39 | 47 | -8 |
-| Bryce Young | QB | 948 | 8 | 15 | -7 |
-| Kyler Murray | QB | 307 | 12 | 19 | -7 |
+| Tony Pollard | RB | 1015 | 24 | 35 | -11 |
+| Rashee Rice | WR | 2012 | 16 | 25 | -9 |
+| Mike Evans | WR | 2392 | 13 | 21 | -8 |
+| RJ Harvey | RB | 1117 | 22 | 30 | -8 |
+| David Montgomery | RB | 1200 | 21 | 28 | -7 |
+| Xavier Worthy | WR | 620 | 34 | 41 | -7 |
+| Josh Downs | WR | 478 | 40 | 47 | -7 |
+| Bryce Young | QB | 948 | 9 | 15 | -6 |
+| Bo Nix | QB | 268 | 15 | 21 | -6 |
 | DJ Moore | WR | 1846 | 21 | 27 | -6 |
 
 <!-- forward-test:start -->
