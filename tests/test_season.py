@@ -53,3 +53,21 @@ def test_playoff_reseeding_sends_lowest_remaining_seed_to_top_seed():
     result = simulate_team_scores(scores, [15, 16, 17], 14, 6, playoff_reseeding=True)
 
     assert result["champion"].tolist() == [1]
+
+
+def test_real_schedule_and_current_standings_seed_remaining_season():
+    scores = np.zeros((5, 1, 6), dtype=np.float32)
+    scores[0, 0] = [20, 10, 0, 0, 0, 0]
+    scores[1, 0] = [15, 5, 0, 0, 0, 0]
+    initial_wins = np.array([5, 4, 3, 2, 1, 0], dtype=float)
+    initial_points = np.array([700, 650, 600, 550, 500, 450], dtype=float)
+
+    result = simulate_team_scores(
+        scores, [8, 9, 15, 16, 17], 14, 6,
+        regular_matchups={8: [(0, 1)], 9: [(0, 1)]},
+        initial_wins=initial_wins, initial_points_for=initial_points,
+    )
+
+    assert result["wins"][0, 0] == 7
+    assert result["wins"][0, 1] == 4
+    assert result["points_for"][0, 0] == 735

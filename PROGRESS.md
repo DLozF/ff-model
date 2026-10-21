@@ -24,6 +24,7 @@
 | T04-4 | done | Explainer snap and target shares use valid team-game denominators |
 | T04-5 | done | Expected bonuses reduced bias in 5/6 positions but failed MAE gates; rejected |
 | T04-6 | done | Expanded ridge improved Spearman/RMSE but worsened MAE in all periods; rejected |
+| T04-7 | blocked | Full-paste importer is implemented; real league rebuild awaits roster, standings, and schedule pastes |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -39,6 +40,7 @@
 - T04 Item 3 treats every pre-existing config value as the pasted-settings authority when Yahoo returns a conflicting value.
 
 ## Blocked
+- T04 Item 7 real-league activation: `.env` has no configured `YAHOO_CLIENT_ID`, but `data/yahoo_paste/` lacks `team_01.txt`-`team_12.txt`, `standings.txt`, and `schedule_wNN.txt`. The importer exits before writes and lists these under Needs Diego.
 - P3 calibration gate: after rebuilding 2026 week 6 from nflverse actuals, the rolling eight-week b/s candidate improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025, and still failed the every-position coverage gate. It was not adopted. Full results: reports/calibration.md.
 - P9 calibration gate: copula Brier beat independent overall (0.219201 vs 0.219208) and stacked (0.217772 vs 0.217796), but stacked worst equal-count bin error was 0.065119 (>0.05). Overall worst bin was 0.025570.
 
@@ -134,3 +136,4 @@
 - T04 Item 4: all six explainers reran. Snap/target old->new: Malik Nabers .0614/.0229 -> .6800/.2289; Emari Demercado .0078/.0000 -> .0900/.0000; Tanner Hudson .0095/.0029 -> .1600/.0291; Tyrod Taylor, Brian Thomas week 1, and Brandon Aubrey remained .0000/.0000 because no applicable prior role history.
 - T04 Item 5: walk-forward expected milestones, 40+ plays/TDs, and DEF fourth-down stops reduced mean bias in 5/6 positions and improved Spearman in all four test periods, but MAE worsened 0.792% in 2025 and 0.838% in completed 2026 weeks, exceeding the 0.5% cap. Task-specific and standard 1% gates failed; `projection_source` remains `sleeper`, so calibration/P6 were not rerun. Configured milestone mode is highest; mean expected bonus was 0.420 points versus 0.448 stacked.
 - T04 Item 6: added past-only snap/target/carry shares, Vegas context, shrunk opponent points allowed, home/away, and QB-change features to standardized per-position ridge. MAE worsened 1.015%/1.092%/1.226%/1.802% for 2023-2026 despite better Spearman and RMSE, so the standard gate failed and HGB was not run. `projection_source` remains `sleeper`.
+- T04 Item 7: Yahoo API is not configured, so full-paste support was added. Raw team pages, standings, and remaining-week schedules now parse into normalized Yahoo tables; more than three player mismatches abort before writes; real-league simulations seed current standings and use the pasted schedule; P6/P8/waiver reports label real-league output. Activation and reruns were not possible because only settings, my team, and my roster are currently pasted.

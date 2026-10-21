@@ -9,6 +9,11 @@ from ffm.ids import normalize_team
 
 
 POSITION_MAP = {"W/R/T": "FLEX"}
+PLAYER_LINE = re.compile(
+    r"^(?P<name>.+?)(?:No new player Notes?|New Player Note|Player Note)\s+"
+    r"(?P<team>[A-Za-z]{2,3})\s*-\s*(?P<pos>QB|RB|WR|TE|K|DEF)\b",
+    re.IGNORECASE,
+)
 SCORING_LABELS = {
     "Passing Touchdowns": "pass_td", "Interceptions": "pass_int",
     "Rushing Touchdowns": "rush_td", "Receptions": "rec",
@@ -43,11 +48,6 @@ def normalize_player_name(name: str) -> str:
 
 def parse_available_text(text: str) -> tuple[pl.DataFrame, list[str]]:
     """Parse concatenated Yahoo available-player pages and return unparsed lines."""
-    pattern = re.compile(
-        r"^(?P<name>.+?)(?:No new player Notes?|New Player Note|Player Note)\s+"
-        r"(?P<team>[A-Za-z]{2,3})\s*-\s*(?P<pos>QB|RB|WR|TE|K|DEF)\b",
-        re.IGNORECASE,
-    )
     records = []
     unparsed = []
     seen = set()
@@ -55,7 +55,7 @@ def parse_available_text(text: str) -> tuple[pl.DataFrame, list[str]]:
         line = raw.strip()
         if not line:
             continue
-        match = pattern.search(line)
+        match = PLAYER_LINE.search(line)
         if not match:
             unparsed.append(line)
             continue
@@ -72,6 +72,114 @@ def parse_available_text(text: str) -> tuple[pl.DataFrame, list[str]]:
             records.append(record)
             seen.add(key)
     return pl.from_dicts(records, infer_schema_length=None), unparsed
+
+
+def _player_record(line: str) -> dict | None:
+    match = PLAYER_LINE.search(line.strip())
+    if not match:
+        return None
+    name = re.sub(r"(?:IR-R|IR|PUP|NA|Q|D|O)$", "", match.group("name").strip()).strip()
+    return {
+        "name": name,
+        "nfl_team": normalize_team(match.group("team")),
+        "pos": match.group("pos").upper(),
+    }
+
+
+def parse_roster_page(text: str) -> tuple[str | None, pl.DataFrame, list[str]]:
+    """Parse a raw Yahoo team roster page while retaining lineup slots."""
+    team_name = None
+    records = []
+    unparsed = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        team_match = re.match(r"^(?:Team|Fantasy Team)\s*:\s*(.+)$", line, re.IGNORECASE)
+        if team_match:
+            team_name = team_match.group(1).strip()
+            continue
+        if line.lower() in {"players", "player", "roster", "status", "pos"}:
+            continue
+        slot_match = re.match(r"^(QB|RB|WR|TE|W/R/T|K|DEF|D|BN|IR)\s+(.+)$", line, re.IGNORECASE)
+        if not slot_match:
+            unparsed.append(line)
+            continue
+        slot = slot_match.group(1).upper()
+        record = _player_record(slot_match.group(2))
+        if record is None:
+            unparsed.append(line)
+            continue
+        records.append({"slot": slot, **record})
+    schema = {"slot": pl.String, "name": pl.String, "nfl_team": pl.String, "pos": pl.String}
+    return team_name, pl.from_dicts(records, schema=schema), unparsed
+
+
+def parse_standings_text(text: str) -> tuple[pl.DataFrame, dict[str, int], list[str]]:
+    """Parse Yahoo standings into team IDs and current records."""
+    records = []
+    unparsed = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.lower() in {"standings", "rank team w-l-t points", "rank"}:
+            continue
+        parts = [part.strip() for part in line.split("\t") if part.strip()]
+        if len(parts) >= 4:
+            rank_text, team_name, record_text, points_text = parts[:4]
+            record = re.fullmatch(r"(\d+)\s*-\s*(\d+)(?:\s*-\s*(\d+))?", record_text)
+            if rank_text.isdigit() and record:
+                records.append({
+                    "team_id": int(rank_text), "team_name": team_name,
+                    "wins": int(record.group(1)), "losses": int(record.group(2)),
+                    "ties": int(record.group(3) or 0), "points_for": float(points_text.replace(",", "")),
+                    "rank": int(rank_text),
+                })
+                continue
+        match = re.match(
+            r"^(?P<rank>\d+)\s+(?P<team>.+?)\s+(?P<w>\d+)-(?P<l>\d+)(?:-(?P<t>\d+))?\s+(?P<points>[\d,]+(?:\.\d+)?)$",
+            line,
+        )
+        if match:
+            records.append({
+                "team_id": int(match.group("rank")), "team_name": match.group("team").strip(),
+                "wins": int(match.group("w")), "losses": int(match.group("l")),
+                "ties": int(match.group("t") or 0), "points_for": float(match.group("points").replace(",", "")),
+                "rank": int(match.group("rank")),
+            })
+        else:
+            unparsed.append(line)
+    frame = pl.from_dicts(records, schema={
+        "team_id": pl.Int64, "team_name": pl.String, "wins": pl.Int64,
+        "losses": pl.Int64, "ties": pl.Int64, "points_for": pl.Float64, "rank": pl.Int64,
+    })
+    teams = {normalize_player_name(row["team_name"]): int(row["team_id"]) for row in records}
+    return frame, teams, unparsed
+
+
+def parse_schedule_text(text: str, teams: dict[str, int]) -> tuple[pl.DataFrame, list[str]]:
+    """Parse one or more Yahoo matchup pages using standings team IDs."""
+    week = None
+    records = []
+    unparsed = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        week_match = re.match(r"^Week\s+(\d+)", line, re.IGNORECASE)
+        if week_match:
+            week = int(week_match.group(1))
+            continue
+        matchup = re.split(r"\s+(?:vs\.?|at)\s+|\t+(?:vs\.?|at)\t+", line, maxsplit=1, flags=re.IGNORECASE)
+        if week is None or len(matchup) != 2:
+            unparsed.append(line)
+            continue
+        left, right = (normalize_player_name(value) for value in matchup)
+        if left not in teams or right not in teams:
+            unparsed.append(line)
+            continue
+        records.append({"week": week, "team1_id": teams[left], "team2_id": teams[right]})
+    frame = pl.from_dicts(records, schema={"week": pl.Int64, "team1_id": pl.Int64, "team2_id": pl.Int64})
+    return frame, unparsed
 
 
 def _rows(text: str) -> dict[str, str]:

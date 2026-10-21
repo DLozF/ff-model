@@ -8,7 +8,7 @@ import polars as pl
 from ffm.config import load_config
 from ffm.distributions import QuantileModel
 from ffm.ids import normalize_team
-from ffm.league import partial_synthetic_league
+from ffm.league import load_real_league, partial_synthetic_league
 from ffm.market import load_market, write_model_vs_market
 from ffm.market_fallback import apply_model_fallback
 from ffm.scoring import score_projection_frame
@@ -115,8 +115,9 @@ def fixed_idp_schedule(games, team, weekly_points):
 
 def write_report(league, result, runtime, reproducible, teams, pending_overrides):
     """Write synthetic league odds."""
+    label = "real league" if not league.get("partial_import", True) else "synthetic opponents"
     lines = [
-        "# League odds (synthetic opponents)", "",
+        f"# League odds ({label})", "",
         f"- n_final worlds + season runtime: {runtime:.3f} seconds",
         f"- Same-seed reproducibility check: {'passed' if reproducible else 'failed'}", "",
         "| Team | P(playoffs) | P(bye) | P(champion) | Expected wins | Expected points |",
@@ -145,8 +146,12 @@ def main():
     completed = completed_weeks(schedules, 2026)
     first_week = max(completed) + 1
     weeks = list(range(first_week, config["league"]["playoff_weeks"][-1] + 1))
+    full_import = not config["league"].get("partial_import", True)
     partial_roster = pl.read_parquet(CACHE / "yahoo_partial_roster.parquet")
-    real_roster_ids = partial_roster.filter(
+    roster_table = (
+        pl.read_parquet(CACHE / "yahoo_rosters.parquet") if full_import else partial_roster
+    )
+    real_roster_ids = roster_table.filter(
         pl.col("sleeper_id").is_not_null() & ~pl.col("model_excluded")
     ).get_column("sleeper_id").cast(pl.String).to_list()
     history = load_projection_history(2026, config["scoring"])
@@ -178,10 +183,22 @@ def main():
         pl.col("position").alias("pos"), "ros_points",
         pl.col("market_value_final").alias("market_value"),
     )
-    league = partial_synthetic_league(
-        draft_players, real_roster_ids, config["league"]["my_team"],
-        teams=config["league"]["teams"], roster_size=15,
-    )
+    if full_import:
+        league = load_real_league(
+            CACHE,
+            players.select(pl.col("player_id").cast(pl.String).alias("sleeper_id"), "player_index"),
+        )
+        league.update({
+            "partial_import": False,
+            "real_team_index": league["teams"].index(config["league"]["my_team"]),
+            "market_values": players.get_column("market_value_final").to_list(),
+            "league_source": "real league",
+        })
+    else:
+        league = partial_synthetic_league(
+            draft_players, real_roster_ids, config["league"]["my_team"],
+            teams=config["league"]["teams"], roster_size=15,
+        )
     idp = partial_roster.filter(pl.col("model_excluded"))
     fixed_idp_points = float(idp.get_column("yahoo_proj_w7").fill_null(0).mean()) if idp.height else 0.0
     fixed_idp_team = idp.item(0, "nfl_team") if idp.height else None
@@ -215,9 +232,27 @@ def main():
         for roster in league["rosters"]
     ], axis=2)
     team_scores[:, :, league["real_team_index"]] += np.asarray(fixed_idp_week_points)[:, None]
+    regular_matchups = None
+    initial_wins = None
+    initial_points_for = None
+    if full_import:
+        team_ids = pl.read_parquet(CACHE / "yahoo_teams.parquet").sort("team_id").get_column("team_id").to_list()
+        team_index = {int(team_id): index for index, team_id in enumerate(team_ids)}
+        yahoo_schedule = pl.read_parquet(CACHE / "yahoo_schedule.parquet")
+        regular_matchups = {}
+        for row in yahoo_schedule.iter_rows(named=True):
+            regular_matchups.setdefault(int(row["week"]), []).append(
+                (team_index[int(row["team1_id"])], team_index[int(row["team2_id"])])
+            )
+        standings = pl.read_parquet(CACHE / "yahoo_standings.parquet").sort("team_id")
+        initial_wins = standings.get_column("wins").to_numpy()
+        initial_points_for = standings.get_column("points_for").to_numpy()
     result = simulate_team_scores(
         team_scores, weeks, config["league"]["regular_season_weeks"][1],
         config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+        regular_matchups=regular_matchups,
+        initial_wins=initial_wins,
+        initial_points_for=initial_points_for,
     )
     runtime = time.perf_counter() - started
     world_dir = Path(config["paths"]["worlds"]) / f"2026_w{first_week}"

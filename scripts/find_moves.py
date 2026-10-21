@@ -195,6 +195,24 @@ def main():
         )
     write_model_vs_market(players, market, ROOT / "reports/model_vs_market.md")
     league = json.loads((ROOT / "models/synthetic_league.json").read_text())
+    simulation_kwargs = {}
+    if not league.get("partial_import", True):
+        teams_table = pl.read_parquet(ROOT / "data/cache/yahoo_teams.parquet").sort("team_id")
+        team_index = {
+            int(team_id): index for index, team_id in enumerate(teams_table.get_column("team_id"))
+        }
+        schedule_table = pl.read_parquet(ROOT / "data/cache/yahoo_schedule.parquet")
+        matchups = {}
+        for row in schedule_table.iter_rows(named=True):
+            matchups.setdefault(int(row["week"]), []).append(
+                (team_index[int(row["team1_id"])], team_index[int(row["team2_id"])])
+            )
+        standings = pl.read_parquet(ROOT / "data/cache/yahoo_standings.parquet").sort("team_id")
+        simulation_kwargs = {
+            "regular_matchups": matchups,
+            "initial_wins": standings.get_column("wins").to_numpy(),
+            "initial_points_for": standings.get_column("points_for").to_numpy(),
+        }
     names = [row["name"] or row["player_id"] for row in players.iter_rows(named=True)]
     positions = players.get_column("position").to_numpy()
     ros = players.get_column("ros_points").to_numpy()
@@ -276,6 +294,7 @@ def main():
     before = simulate_team_scores(
         base_scores, weeks, config["league"]["regular_season_weeks"][1],
         config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+        **simulation_kwargs,
     )
     stress_points, stress_available = stress_worlds(points, available, positions)
     stress_base_scores = np.stack([
@@ -286,6 +305,7 @@ def main():
     stress_before = simulate_team_scores(
         stress_base_scores, weeks, config["league"]["regular_season_weeks"][1],
         config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+        **simulation_kwargs,
     )
     criterion = "champion" if before["playoff"][:, my_team].mean() > 0.9 else "playoffs"
     confirmed = []
@@ -306,6 +326,7 @@ def main():
         after = simulate_team_scores(
             after_scores, weeks, config["league"]["regular_season_weeks"][1],
             config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+            **simulation_kwargs,
         )
         mine = paired_summary(before, after, my_team)
         other = paired_summary(before, after, row["other_team"])
@@ -313,6 +334,7 @@ def main():
         stress_after = simulate_team_scores(
             stress_after_scores, weeks, config["league"]["regular_season_weeks"][1],
             config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+            **simulation_kwargs,
         )
         stress_mine = paired_summary(stress_before, stress_after, my_team)
         stress_verdict = trade_verdict(stress_mine[criterion])
@@ -363,6 +385,7 @@ def main():
         after = simulate_team_scores(
             after_scores, weeks, config["league"]["regular_season_weeks"][1],
             config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
+            **simulation_kwargs,
         )
         mine = paired_summary(before, after, my_team)
         after_bye_gaps = bye_coverage_gaps(
@@ -396,7 +419,8 @@ def main():
         })
 
     date = today.isoformat()
-    trade_lines = [f"# Trade ideas with synthetic opponents: {date}", ""]
+    league_label = "real league" if not league.get("partial_import", True) else "synthetic opponents"
+    trade_lines = [f"# Trade ideas ({league_label}): {date}", ""]
     if not trade_enabled:
         trade_lines.extend([
             f"Trades skipped: deadline was {config['league']['trade_deadline']}.", "",
@@ -441,7 +465,7 @@ def main():
         )
 
     waiver_lines = [
-        f"# Waiver ideas: {date}", "",
+        f"# Waiver ideas ({league_label}): {date}", "",
         *(["**Free agents are estimated; confirm on Yahoo before claiming.**", ""]
           if pool_estimated else []),
         "## Waiver results", "",

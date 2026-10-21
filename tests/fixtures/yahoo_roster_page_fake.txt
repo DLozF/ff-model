@@ -1,0 +1,7 @@
+Team: Nebula Foxes
+Players
+QB	Alpha PasserNew Player Note TB - QB
+WR	Beta CatcherQNew Player Note NE - WR
+IR	Gamma StashIR-RPlayer Note NO - WR
+DEF	CometsNo new player Notes Den - DEF
+This row is not a player

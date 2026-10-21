@@ -49,18 +49,30 @@ def simulate_team_scores(
     regular_season_end: int,
     playoff_teams: int,
     playoff_reseeding: bool = False,
+    regular_matchups: dict[int, list[tuple[int, int]]] | None = None,
+    initial_wins: np.ndarray | None = None,
+    initial_points_for: np.ndarray | None = None,
 ) -> dict:
     """Simulate standings and playoffs from cached team scores."""
     worlds = team_scores.shape[1]
     teams = team_scores.shape[2]
     wins = np.zeros((worlds, teams), dtype=np.float32)
     points_for = np.zeros((worlds, teams), dtype=np.float32)
+    if initial_wins is not None:
+        wins += np.asarray(initial_wins, dtype=np.float32)[None, :]
+    if initial_points_for is not None:
+        points_for += np.asarray(initial_points_for, dtype=np.float32)[None, :]
     schedule = round_robin(teams)
     regular_indices = [i for i, week in enumerate(week_numbers) if week <= regular_season_end]
     for round_index, week_index in enumerate(regular_indices):
         scores = team_scores[week_index]
         points_for += scores
-        for left, right in schedule[round_index % len(schedule)]:
+        week = week_numbers[week_index]
+        matchups = (
+            regular_matchups.get(week, []) if regular_matchups is not None
+            else schedule[round_index % len(schedule)]
+        )
+        for left, right in matchups:
             wins[:, left] += (scores[:, left] > scores[:, right]) + 0.5 * (scores[:, left] == scores[:, right])
             wins[:, right] += (scores[:, right] > scores[:, left]) + 0.5 * (scores[:, left] == scores[:, right])
     team_key = np.broadcast_to(np.arange(teams), wins.shape)
