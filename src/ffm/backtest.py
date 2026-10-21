@@ -50,6 +50,50 @@ def matchup_metrics(probability: np.ndarray, outcome: np.ndarray) -> dict:
     }
 
 
+def wilson_interval(successes: int, probability: float, confidence: float = 0.95) -> tuple[float, float]:
+    """Return the Wilson score interval for one binomial proportion."""
+    from scipy.stats import norm
+
+    successes = max(int(successes), 0)
+    z = float(norm.ppf(0.5 + confidence / 2))
+    denominator = 1 + z**2 / successes
+    center = (probability + z**2 / (2 * successes)) / denominator
+    spread = z * np.sqrt(probability * (1 - probability) / successes + z**2 / (4 * successes**2)) / denominator
+    return float(np.clip(center - spread, 0, 1)), float(np.clip(center + spread, 0, 1))
+
+
+def ece_bootstrap(
+    probability: np.ndarray, outcome: np.ndarray, seed: int, samples: int = 1000, bins: int = 10
+) -> dict[str, float]:
+    """Bootstrap the expected calibration error with a 95% interval."""
+    probability = np.asarray(probability, dtype=float)
+    outcome = np.asarray(outcome, dtype=float)
+    edges = np.linspace(0, 1, bins + 1)
+    indices = np.clip(np.digitize(probability, edges[1:-1]), 0, bins - 1)
+
+    def one(indices: np.ndarray) -> float:
+        total = 0.0
+        for group in range(bins):
+            selected = indices == group
+            if selected.sum():
+                total += selected.sum() / indices.size * abs(probability[selected].mean() - outcome[selected].mean())
+        return total
+
+    observed = one(indices)
+    rng = np.random.default_rng(seed)
+    estimates = [
+        one(rng.integers(0, indices.size, size=indices.size))
+        for _ in range(samples)
+        if indices.size
+    ] or [observed]
+    center = float(np.mean(estimates))
+    spread = float(np.std(estimates, ddof=1)) if len(estimates) > 1 else 0.0
+    low, high = np.quantile(estimates, [0.025, 0.975])
+    if spread == 0:
+        low = high = center
+    return {"mean": float(observed), "low": float(min(low, observed)), "high": float(max(high, observed))}
+
+
 def paired_cluster_bootstrap(
     differences: np.ndarray,
     clusters: np.ndarray,

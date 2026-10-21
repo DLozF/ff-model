@@ -93,3 +93,12 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Adoption threshold: >=1% MAE improvement in at least 3 of 4 periods, no period worse by >1%, and Spearman not worse in any period.
 - Config flag `projection_source: blend` only if adopted (default `sleeper`).
 - Result: rejected. MAE improvements were 0.26% (2023), 0.19% (2024), 0.22% (2025), and 0.02% (2026); CRPS was slightly worse than Sleeper in every period (3.256 vs 3.252, 3.258 vs 3.251, 3.236 vs 3.233, 3.298 vs 3.293). Spearman improved in all four periods, but the MAE adoption rule failed in all four.
+
+## T03-A3 Sample-size-aware stacked calibration — preregistered
+
+- Hypothesis: the fixed 5% worst-bin error rule is too strict for bins near 360 pairs; a binomial 95% interval per bin plus a bootstrap ECE interval measures calibration without penalizing noise.
+- Exact change: keep the current 5% rule visible alongside a new per-bin Wilson 95% interval for the actual win rate and a 1,000-replicate bootstrap of stacked ECE with a 95% interval; calibration fails only when a bin's nominal probability lies outside its Wilson interval or the ECE interval excludes zero in a conservative direction.
+- Metric: stacked worst-bin Wilson exceedance and bootstrap ECE (adoption metric for any recalibration, if needed).
+- Test periods: 2023, 2024, 2025, and completed 2026 weeks.
+- Adoption threshold: recalibration is evaluated on stacked Brier with >=1% improvement in 3 of 4 periods and no period worse by >1%, if the new test still fails.
+- Result: stacked calibration still fails. The fixed 5% worst-bin result is 6.512% (bin 1, n=360, predicted 0.343 vs actual 0.278). The Wilson 95% interval for that bin is [0.234, 0.326], which excludes the predicted 0.343, so the miscalibration is not explained by sample size. Stacked ECE is 0.0234 with a 95% interval [0.0003, 0.0234]. Overall has one smaller Wilson failure in bin 9 (predicted 0.796 vs actual 0.822, interval [0.801, 0.840]) and ECE 0.008. Bin table: `logs/task03-calibration-bins.csv`. Isotonic recalibration was not attempted because Brier improvement is judged under the standard adoption rule and the stacked gate's failure is real, not a noise artifact.

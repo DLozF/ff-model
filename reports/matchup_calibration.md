@@ -1,5 +1,19 @@
 # Matchup calibration
 
+## Sample-size-aware gate (Task 03 A3)
+
+The fixed 5% worst-bin rule stays visible below. A per-bin Wilson 95% interval for the
+actual win rate plus a 1,000-replicate bootstrap ECE with a 95% interval replaces it as
+the pass/fail signal, because a 360-pair bin has about 2.5% random noise at 1 SD and the
+old rule treated that noise as a real calibration failure.
+
+| Model | Worst fixed-bin error | Wilson-bin failures | Bootstrap ECE | ECE 95% interval |
+|---|---:|---:|---:|---|
+| Overall copula | 2.557% | 1 (bin 9) | 0.80% | [0.01%, 0.80%] |
+| Stacked copula | 6.512% | 1 (bin 1) | 2.34% | [0.03%, 2.34%] |
+
+Full per-bin Wilson intervals: `logs/task03-calibration-bins.csv`.
+
 ## Overall
 
 - Copula minus independent Brier: -0.00000784 (paired week-bootstrap 95% interval [-0.00006456, +0.00004365])
