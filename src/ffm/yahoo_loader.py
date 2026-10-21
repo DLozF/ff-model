@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import shutil
+from datetime import datetime
 from pathlib import Path
 
 import polars as pl
@@ -22,6 +24,25 @@ STAT_MAP = {
     "fumble recoveries": "def_fum_rec", "defensive touchdowns": "def_td",
     "safeties": "def_safety", "blocked kicks": "def_blk_kick",
 }
+
+
+class YahooTableError(ValueError):
+    """Identify the Yahoo table that could not be parsed or validated."""
+
+    def __init__(self, table: str, message: str):
+        self.table = table
+        super().__init__(f"{table}: {message}")
+
+
+def _table(name: str, rows, required=()) -> pl.DataFrame:
+    try:
+        frame = pl.from_dicts(rows, infer_schema_length=None)
+    except Exception as exc:
+        raise YahooTableError(name, str(exc)) from exc
+    missing = [column for column in required if column not in frame.columns]
+    if missing:
+        raise YahooTableError(name, f"missing columns {missing}")
+    return frame
 
 
 def _id_map(ids: pl.DataFrame) -> dict[str, str]:
@@ -81,8 +102,11 @@ def _scoring(settings: dict) -> dict:
 
 def parse_yahoo_payload(payload: dict, ids: pl.DataFrame) -> dict:
     """Normalize saved Yahoo JSON into model-ready tables."""
-    league = payload["league"]
-    raw_settings = payload["settings"]
+    try:
+        league = payload["league"]
+        raw_settings = payload["settings"]
+    except Exception as exc:
+        raise YahooTableError("settings", str(exc)) from exc
     lineup = {}
     bench = 0
     for row in raw_settings.get("roster_positions", []):
@@ -104,18 +128,35 @@ def parse_yahoo_payload(payload: dict, ids: pl.DataFrame) -> dict:
     mapping = _id_map(ids)
     roster_rows = []
     team_rows = []
-    for team in payload["teams"]:
-        team_rows.append({"team_id": int(team["team_id"]), "team_name": team["name"]})
-        for player in team.get("roster", []):
-            roster_rows.append({"team_id": int(team["team_id"]), "team_name": team["name"], **_player_record(player, mapping)})
-    free_agents = [_player_record(player, mapping) for player in payload.get("free_agents", [])]
+    try:
+        for team in payload["teams"]:
+            team_rows.append({"team_id": int(team["team_id"]), "team_name": team["name"]})
+            for player in team.get("roster", []):
+                roster_rows.append({
+                    "team_id": int(team["team_id"]), "team_name": team["name"],
+                    **_player_record(player, mapping),
+                })
+    except Exception as exc:
+        raise YahooTableError("rosters", str(exc)) from exc
+    try:
+        free_agents = [
+            _player_record(player, mapping) for player in payload.get("free_agents", [])
+        ]
+    except Exception as exc:
+        raise YahooTableError("free_agents", str(exc)) from exc
     return {
         "settings": settings,
-        "teams": pl.from_dicts(team_rows),
-        "rosters": pl.from_dicts(roster_rows),
-        "free_agents": pl.from_dicts(free_agents),
-        "standings": pl.from_dicts(payload.get("standings", [])),
-        "schedule": pl.from_dicts(payload.get("schedule", [])),
+        "teams": _table("teams", team_rows, ("team_id", "team_name")),
+        "rosters": _table("rosters", roster_rows, ("team_id", "sleeper_id")),
+        "free_agents": _table("free_agents", free_agents),
+        "standings": _table(
+            "standings", payload.get("standings", []),
+            ("team_id", "wins", "losses", "points_for", "rank"),
+        ),
+        "schedule": _table(
+            "schedule", payload.get("schedule", []),
+            ("week", "team1_id", "team2_id"),
+        ),
     }
 
 
@@ -165,17 +206,29 @@ def fetch_yahoo_payload(env_path: Path) -> dict:
 
 def load_csv_tables(directory: Path) -> dict:
     """Load the documented CSV alternative into the same table structure."""
-    league = pl.read_csv(directory / "league.csv").row(0, named=True)
-    lineup = {row["position"]: int(row["count"]) for row in pl.read_csv(directory / "lineup.csv").iter_rows(named=True)}
-    scoring = {row["config_key"]: float(row["value"]) for row in pl.read_csv(directory / "scoring.csv").iter_rows(named=True)}
+    def read(name: str) -> pl.DataFrame:
+        try:
+            return pl.read_csv(directory / f"{name}.csv")
+        except Exception as exc:
+            raise YahooTableError(name, str(exc)) from exc
+
+    league = read("league").row(0, named=True)
+    lineup = {
+        row["position"]: int(row["count"])
+        for row in read("lineup").iter_rows(named=True)
+    }
+    scoring = {
+        row["config_key"]: float(row["value"])
+        for row in read("scoring").iter_rows(named=True)
+    }
     settings = {**league, "lineup": lineup, "scoring": scoring}
     return {
         "settings": settings,
-        "teams": pl.read_csv(directory / "teams.csv"),
-        "rosters": pl.read_csv(directory / "rosters.csv"),
-        "free_agents": pl.read_csv(directory / "free_agents.csv"),
-        "standings": pl.read_csv(directory / "standings.csv"),
-        "schedule": pl.read_csv(directory / "schedule.csv"),
+        "teams": read("teams"),
+        "rosters": read("rosters"),
+        "free_agents": read("free_agents"),
+        "standings": read("standings"),
+        "schedule": read("schedule"),
     }
 
 
@@ -187,10 +240,100 @@ def save_tables(tables: dict, cache: Path) -> None:
     (cache / "yahoo_settings.json").write_text(json.dumps(tables["settings"], indent=2), encoding="utf-8")
 
 
-def update_config(config_path: Path, settings: dict) -> None:
-    """Replace verified league and scoring values in config.yaml."""
-    config = yaml.safe_load(config_path.read_text())
-    for key in ("teams", "lineup", "bench", "regular_season_weeks", "playoff_teams", "playoff_weeks"):
-        config["league"][key] = settings[key]
-    config["scoring"].update(settings["scoring"])
-    config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+def _merge_existing(existing: dict, incoming: dict, prefix: str, conflicts: list[dict]) -> None:
+    for key, value in incoming.items():
+        path = f"{prefix}.{key}"
+        if key not in existing:
+            existing[key] = value
+        elif isinstance(existing[key], dict) and isinstance(value, dict):
+            _merge_existing(existing[key], value, path, conflicts)
+        elif existing[key] != value:
+            conflicts.append({"key": path, "existing": existing[key], "api": value})
+
+
+def _complete_import(tables: dict, expected_teams: int) -> bool:
+    return (
+        tables["teams"].height == expected_teams
+        and tables["rosters"].get_column("team_id").n_unique() == expected_teams
+        and tables["standings"].get_column("team_id").n_unique() == expected_teams
+        and not tables["schedule"].is_empty()
+    )
+
+
+def _diff_report(conflicts: list[dict]) -> str:
+    lines = ["# Yahoo load differences", ""]
+    if not conflicts:
+        lines.append("- None.")
+    else:
+        lines.append("Existing pasted/config values were kept for these conflicts:")
+        lines.append("")
+        for row in conflicts:
+            lines.append(
+                f"- `{row['key']}` — existing: `{row['existing']}`; "
+                f"Yahoo API: `{row['api']}`"
+            )
+    return "\n".join(lines) + "\n"
+
+
+def merged_config(config: dict, settings: dict, complete: bool) -> tuple[dict, list[dict]]:
+    """Merge Yahoo settings without overwriting existing pasted values."""
+    result = json.loads(json.dumps(config))
+    conflicts = []
+    league_settings = {key: value for key, value in settings.items() if key != "scoring"}
+    _merge_existing(result.setdefault("league", {}), league_settings, "league", conflicts)
+    _merge_existing(
+        result.setdefault("scoring", {}), settings.get("scoring", {}),
+        "scoring", conflicts,
+    )
+    result["league"]["partial_import"] = not complete
+    return result, conflicts
+
+
+def update_config(config_path: Path, settings: dict, complete: bool = False) -> list[dict]:
+    """Atomically merge Yahoo settings into config and return conflicts."""
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    merged, conflicts = merged_config(config, settings, complete)
+    temporary = config_path.with_suffix(config_path.suffix + ".tmp")
+    temporary.write_text(yaml.safe_dump(merged, sort_keys=False), encoding="utf-8")
+    os.replace(temporary, config_path)
+    return conflicts
+
+
+def load_yahoo_tables(
+    tables: dict,
+    config_path: Path,
+    cache: Path,
+    diff_path: Path,
+    now: datetime | None = None,
+) -> Path:
+    """Back up config, then merge settings and save validated tables."""
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    expected_teams = int(config["league"]["teams"])
+    complete = _complete_import(tables, expected_teams)
+    timestamp = (now or datetime.now()).strftime("%Y%m%dT%H%M%S")
+    backup = config_path.with_name(f"{config_path.name}.pre-yahoo-{timestamp}")
+    shutil.copy2(config_path, backup)
+    save_tables(tables, cache)
+    conflicts = update_config(config_path, tables["settings"], complete=complete)
+    diff_path.parent.mkdir(parents=True, exist_ok=True)
+    diff_path.write_text(_diff_report(conflicts), encoding="utf-8")
+    return backup
+
+
+def load_yahoo_payload(
+    payload: dict,
+    ids: pl.DataFrame,
+    config_path: Path,
+    cache: Path,
+    diff_path: Path,
+    now: datetime | None = None,
+) -> tuple[Path, dict]:
+    """Parse and validate every Yahoo table before making any writes."""
+    try:
+        tables = parse_yahoo_payload(payload, ids)
+    except YahooTableError:
+        raise
+    except Exception as exc:
+        raise YahooTableError("settings", str(exc)) from exc
+    backup = load_yahoo_tables(tables, config_path, cache, diff_path, now=now)
+    return backup, tables

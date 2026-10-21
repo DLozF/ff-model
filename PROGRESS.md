@@ -20,6 +20,7 @@
 | T03 | done | FantasyCalc fallback fixed; daily and waiver jobs verified live |
 | T04-1 | done | Market faller percentages use prior value; reports scoped and reordered |
 | T04-2 | done | Distinct waiver adds, drop protection, priority gate, and tolerant Yahoo pool parser |
+| T04-3 | done | Yahoo loader backs up, merges safely, reports conflicts, and preserves config on parse failure |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -32,6 +33,7 @@
 - Yahoo Fantasy API access currently requires manual approval before OAuth app use; setup documentation includes the approval step.
 - T04 Item 1 treats the top 15 waiver targets as the 15 free agents with the highest rest-of-season projection.
 - T04 Item 2 treats an IR player's positive market value as evidence of an expected return; IR players at V=0 are droppable as out for the season.
+- T04 Item 3 treats every pre-existing config value as the pasted-settings authority when Yahoo returns a conflicting value.
 
 ## Blocked
 - P3 calibration gate: after rebuilding 2026 week 6 from nflverse actuals, the rolling eight-week b/s candidate improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025, and still failed the every-position coverage gate. It was not adopted. Full results: reports/calibration.md.
@@ -125,3 +127,4 @@
 - T03 automation: live daily completed in 124.493s; live waivers completed in 165.037s with 10 enriched moves. Both failure markers were cleared after success.
 - T04 Item 1: prior-value percentage changes replace current-value division; V=37/trend=-181 is -83.03%. Current scoped news fell from 47 league-wide names to 3 roster/top-15 waiver names, capped at 10. Trade and waiver moves now precede injury/news sections, with news last.
 - T04 Item 2: prior report had 10 rows but only 5 distinct adds. The rebuilt estimated pool gives all 11 synthetic opponents exactly one K and one DEF; the current protected run screened 680 pairs and found 0 qualifying distinct adds. Fresh `available.txt` pages are now the exclusive pool, with unparsed/unmatched lines logged. Rolling priority requires playoff gain >=0.03 plus a starting or bye-week role.
+- T04 Item 3: Yahoo imports now validate all tables before writes, create `config.yaml.pre-yahoo-<timestamp>`, merge missing keys only, preserve milestones/40+ bonuses/IDP/waiver/trade/reseeding keys, and write conflicts to `reports/yahoo_load_diff.md`. A broken standings fixture left config byte-identical; a pass-TD conflict kept 6.0 over API 4.0. Partial import remains true unless all 12 rosters, standings, and a schedule are present.
