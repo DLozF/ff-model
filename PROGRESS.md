@@ -14,8 +14,9 @@
 | P8 | done | Market-first 37,125-trade finder completed in 473.502s |
 | P9 | blocked | Copula Brier wins overall/stacked; stacked worst decile error 6.51% |
 | P10 | done | Fake Yahoo JSON test passes; live and CSV loaders documented |
-|- P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
+| P11 | done | E1/E2 below 1% adoption threshold; E3 skipped; all flags off |
 | T01 | done | Partial Yahoo import: league scoring refit, real roster in, P6/P8 rebuilt |
+| T02 | done | Blend backtest rejected; explainers built; scorecard and misses written |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -109,3 +110,6 @@
 - T01: refit P3/P4/P5 and rebuilt P6 (18.271s, deterministic) and P8 (44,880 candidates, 24,184 market passes, 255 WELP passes, 30 trades, 10 waivers, 543.1s). Chalino Sánchez playoff probability 0.7444.
 - T01: milestone tiers use highest-only; stacked mode is implemented and pending Diego confirmation. Trade deadline cutoff, playoff reseeding, and IDP-protection logic added with tests.
 - T01: full suite 85 passed; same-seed reproducibility check passed. Assumption: IDP starter contributes his Yahoo projection weekly (0 on bye). Needs Diego: confirm stacked milestones, paste `available.txt`, approve Yahoo API.
+- T02: walk-forward ridge-per-position and blend built (`src/ffm/backtest_projection.py`, `src/ffm/own_projection.py`); 23,520 predictions cached. Adoption rejected (0/4 periods >=1% MAE gain); `projection_source` stays `sleeper`.
+- T02: `scripts/explain_week.py` produced six explainers (Nabers 2026 w4 + five random seeded picks); scorecard and bias-by-bucket saved to `reports/projection_scorecard.md`.
+- T02: leakage, scoring, and determinism tests added; suite passed with `scripts/check.sh`. Assumption: `data/yahoo_paste/history/` absent, so Yahoo Fan-Pts cross-check was skipped.

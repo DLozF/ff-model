@@ -83,3 +83,13 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Test periods: 2023, 2024, 2025, and completed 2026 weeks.
 - Adoption threshold: >=1% win-rate improvement in at least 3 of 4 periods and no period worse by >1%.
 - Result: rejected. Relative win-rate changes were -0.319% (2023), -0.561% (2024), -0.745% (2025), and -2.372% (2026). Mean hindsight points left on the bench increased from 10.305→10.462, 10.369→10.388, 10.717→10.843, and 11.346→11.382.
+
+## T02-B Own projection blend — preregistered
+
+- Hypothesis: a ridge regression per position on pregame features, blended walk-forward with the Sleeper projection, lowers MAE without hurting Spearman rank correlation.
+- Exact change: per-position ridge on EWMA fantasy points (half-life fit on training data), snap/target/carry shares, red-zone opportunities, Vegas implied team points and spread, shrunk rolling opponent points allowed, home/away, QB-change flag, and Sleeper projection; blending weight fit walk-forward on past weeks only; trained only on weeks strictly before each test week (seasons from 2021).
+- Metric: MAE across played player-weeks (adoption metric); within-week Spearman by period (must not be worse in any period); RMSE, bias, and CRPS reported.
+- Test periods: 2023, 2024, 2025, and completed 2026 weeks.
+- Adoption threshold: >=1% MAE improvement in at least 3 of 4 periods, no period worse by >1%, and Spearman not worse in any period.
+- Config flag `projection_source: blend` only if adopted (default `sleeper`).
+- Result: rejected. MAE improvements were 0.26% (2023), 0.19% (2024), 0.22% (2025), and 0.02% (2026); CRPS was slightly worse than Sleeper in every period (3.256 vs 3.252, 3.258 vs 3.251, 3.236 vs 3.233, 3.298 vs 3.293). Spearman improved in all four periods, but the MAE adoption rule failed in all four.
