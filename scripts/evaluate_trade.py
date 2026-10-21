@@ -77,18 +77,7 @@ def write_report(
     """Write a trade decision report."""
     lines = [
         f"# Trade evaluation: {league['teams'][other_team]}", "",
-        *news_lines(news),
-        "## Injury overrides needing Diego's input", "",
-    ]
-    if pending_overrides:
-        lines.extend(
-            f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
-            for row in pending_overrides
-        )
-    else:
-        lines.append("- None.")
-    lines.extend([
-        "", "## Decision", "",
+        "## Decision", "",
         f"- Verdict for {league['teams'][my_team]}: **{verdict}**",
         f"- Stress verdict: **{stress_verdict}** — **{fragility}** ({fragility_reason})",
         "- Stress case: score spread ×1.25; QB availability thinned by one-seventh.",
@@ -101,7 +90,7 @@ def write_report(
         f"- Get values: {get_details or 'none'}",
         f"- Other-team model playoff delta (info only): "
         f"**{summaries[other_team]['playoffs']['mean']:+.4f}**", "",
-    ])
+    ]
     for team in (my_team, other_team):
         lines.extend([
             f"## {league['teams'][team]}", "",
@@ -125,6 +114,15 @@ def write_report(
     lines.extend(["", "## QB exposure: Team 1 lineup point share by NFL team", "", "| NFL team | Before | After |", "|---|---:|---:|"])
     for team in sorted(set(exposure_before) | set(exposure_after)):
         lines.append(f"| {team} | {exposure_before.get(team, 0):.3f} | {exposure_after.get(team, 0):.3f} |")
+    lines.extend(["", "## Injury overrides needing Diego's input", ""])
+    if pending_overrides:
+        lines.extend(
+            f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
+            for row in pending_overrides
+        )
+    else:
+        lines.append("- None.")
+    lines.extend(["", *news_lines(news)])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -149,7 +147,6 @@ def main():
             players, market, sleeper_players,
             lineup=config["league"]["lineup"], overrides=overrides,
         )
-    news = healthy_market_fallers(market, sleeper_players)
     league = json.loads((ROOT / "models/synthetic_league.json").read_text())
     names = players.get_column("name").fill_null(players.get_column("player_id")).to_list()
     positions = players.get_column("position").to_numpy()
@@ -158,6 +155,13 @@ def main():
     player_values = players.get_column("market_value_final").to_numpy()
     value_sources = players.get_column("value_source").to_list()
     my_team = league["teams"].index(config["league"]["my_team"])
+    player_ids = players.get_column("player_id").cast(pl.String).to_list()
+    news_targets = set(league["rosters"][my_team]) | set(
+        sorted(league["free_agents"], key=lambda player: ros_points[player], reverse=True)[:15]
+    )
+    news = healthy_market_fallers(
+        market, sleeper_players, {player_ids[player] for player in news_targets}
+    )
     other_team = league["teams"].index(args.team)
     give = [fuzzy_match(name, names) for name in parse_names(args.give)]
     get = [fuzzy_match(name, names) for name in parse_names(args.get)]

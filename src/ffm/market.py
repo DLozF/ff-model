@@ -170,23 +170,36 @@ def acceptance_label(ratio: float, cutoffs: dict | None = None) -> str:
     return "UNLIKELY"
 
 
-def healthy_market_fallers(market: pl.DataFrame, sleeper_players: pl.DataFrame) -> pl.DataFrame:
-    """List healthy players whose 30-day trend is below negative 25% of value."""
+def healthy_market_fallers(
+    market: pl.DataFrame,
+    sleeper_players: pl.DataFrame,
+    eligible_ids: set[str] | None = None,
+    limit: int = 10,
+) -> pl.DataFrame:
+    """List eligible healthy players down at least 25% from their prior value."""
     health = sleeper_players.select(
         pl.col("player_id").cast(pl.String).alias("sleeper_id"),
         "injury_status", "status", "active",
     )
+    joined = market.join(health, on="sleeper_id", how="inner")
+    if eligible_ids is not None:
+        joined = joined.filter(pl.col("sleeper_id").is_in(sorted(eligible_ids)))
     return (
-        market.join(health, on="sleeper_id", how="inner")
+        joined
+        .with_columns(
+            (pl.col("market_value") - pl.col("trend_30_day")).alias("prior_value")
+        )
+        .with_columns(
+            (100 * pl.col("trend_30_day") / pl.col("prior_value")).alias("trend_pct")
+        )
         .filter(
-            (pl.col("trend_30_day") < -0.25 * pl.col("market_value"))
+            (pl.col("prior_value") > 0)
+            & (pl.col("trend_pct") < -25)
             & (pl.col("injury_status").is_null() | (pl.col("injury_status") == ""))
             & (pl.col("active") == True)
         )
-        .with_columns(
-            (100 * pl.col("trend_30_day") / pl.col("market_value")).alias("trend_pct")
-        )
         .sort("trend_pct")
+        .head(limit)
     )
 
 

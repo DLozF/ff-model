@@ -119,7 +119,6 @@ def main():
             players, market, sleeper_players,
             lineup=config["league"]["lineup"], overrides=overrides,
         )
-    news = healthy_market_fallers(market, sleeper_players)
     write_model_vs_market(players, market, ROOT / "reports/model_vs_market.md")
     league = json.loads((ROOT / "models/synthetic_league.json").read_text())
     names = [row["name"] or row["player_id"] for row in players.iter_rows(named=True)]
@@ -135,6 +134,13 @@ def main():
     my_team = league["teams"].index(config["league"]["my_team"])
     rosters = league["rosters"]
     free_agents = league["free_agents"]
+    player_ids = players.get_column("player_id").cast(pl.String).to_list()
+    news_targets = set(rosters[my_team]) | set(
+        sorted(free_agents, key=lambda player: ros[player], reverse=True)[:15]
+    )
+    news = healthy_market_fallers(
+        market, sleeper_players, {player_ids[player] for player in news_targets}
+    )
     fixed_idp = np.asarray(
         league.get("fixed_idp_week_points", [league.get("fixed_idp_points", 0.0)] * len(weeks))
     )[:, None]
@@ -296,21 +302,13 @@ def main():
         })
 
     date = today.isoformat()
-    trade_lines = [f"# Trade ideas with synthetic opponents: {date}", "", *news_lines(news)]
+    trade_lines = [f"# Trade ideas with synthetic opponents: {date}", ""]
     if not trade_enabled:
         trade_lines.extend([
             f"Trades skipped: deadline was {config['league']['trade_deadline']}.", "",
         ])
-    trade_lines.extend(["## Injury overrides needing Diego's input", ""])
-    if pending_overrides:
-        trade_lines.extend(
-            f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
-            for row in pending_overrides
-        )
-    else:
-        trade_lines.append("- None.")
     trade_lines.extend([
-        "", "## Trade results", "",
+        "## Trade results", "",
         acceptance_status(cutoffs), "",
         f"Screened {candidate_count} trades; {market_pass} passed market "
         f"r >= {cutoffs['possible']:.3f}; "
@@ -334,6 +332,15 @@ def main():
         )
     if not confirmed:
         trade_lines.append("| - | - | - | - | - | - | - | - | - | - | - | - | No qualifying trades | - | - | - |")
+    trade_lines.extend(["", "## Injury overrides needing Diego's input", ""])
+    if pending_overrides:
+        trade_lines.extend(
+            f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
+            for row in pending_overrides
+        )
+    else:
+        trade_lines.append("- None.")
+    trade_lines.extend(["", *news_lines(news)])
     if not args.waivers_only:
         (ROOT / "reports" / f"trade_ideas_{date}.md").write_text(
             "\n".join(trade_lines) + "\n", encoding="utf-8"
@@ -343,22 +350,11 @@ def main():
         f"# Waiver ideas: {date}", "",
         *(["**Free agents are estimated; confirm on Yahoo before claiming.**", ""]
           if league.get("free_agents_estimated") else []),
-        *news_lines(news),
-        "## Injury overrides needing Diego's input", "",
-    ]
-    if pending_overrides:
-        waiver_lines.extend(
-            f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
-            for row in pending_overrides
-        )
-    else:
-        waiver_lines.append("- None.")
-    waiver_lines.extend([
-        "", "## Waiver results", "",
+        "## Waiver results", "",
         f"Screened {len(top_free_agents) * len(rosters[my_team])} add/drop pairs; confirmed top {min(10, len(waiver_screen))}.",
         "", "| Rank | Add | Source | Drop | Source | Add V | Drop V | Playoff gain (95% CI) | Title gain (95% CI) | Next week | ROS | Bye gaps | Role | Waiver advice | Availability |",
         "|---:|---|---|---|---|---:|---:|---|---|---:|---:|---|---|---|---|",
-    ])
+    ]
     availability_note = availability_warning(
         ROOT, config["league"].get("partial_import", False), today
     )
@@ -375,6 +371,15 @@ def main():
         )
     if not waiver_results:
         waiver_lines.append("| - | - | - | - | - | - | - | - | - | - | - | - | - | - | No positive WELP moves |")
+    waiver_lines.extend(["", "## Injury overrides needing Diego's input", ""])
+    if pending_overrides:
+        waiver_lines.extend(
+            f"- {row['name']}: weeks is TBD; override not applied. Note: {row.get('note', '')}."
+            for row in pending_overrides
+        )
+    else:
+        waiver_lines.append("- None.")
+    waiver_lines.extend(["", *news_lines(news)])
     (ROOT / "reports" / f"waivers_{date}.md").write_text("\n".join(waiver_lines) + "\n", encoding="utf-8")
     runtime = time.perf_counter() - started
     print(f"trade_candidates: {candidate_count}")

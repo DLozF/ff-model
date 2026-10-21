@@ -1,10 +1,11 @@
 from datetime import datetime
 
 import polars as pl
+import pytest
 
 from ffm.market import (
     acceptance_cutoffs, acceptance_label, acceptance_status, load_market,
-    market_ratio, package_value, write_model_vs_market,
+    healthy_market_fallers, market_ratio, package_value, write_model_vs_market,
 )
 
 
@@ -95,3 +96,40 @@ def test_write_model_vs_market_preserves_forward_test_section(tmp_path):
     text = path.read_text(encoding="utf-8")
     assert "kept" in text
     assert text.count("<!-- forward-test:start -->") == 1
+
+
+def test_healthy_market_fallers_uses_prior_value_as_percent_base():
+    market = pl.DataFrame({
+        "sleeper_id": ["1"],
+        "market_name": ["Faller"],
+        "market_position": ["WR"],
+        "market_value": [37.0],
+        "trend_30_day": [-181.0],
+    })
+    players = pl.DataFrame({
+        "player_id": ["1"], "injury_status": [None],
+        "status": ["Active"], "active": [True],
+    })
+
+    result = healthy_market_fallers(market, players, {"1"})
+
+    assert result.height == 1
+    assert result.get_column("trend_pct").item() == pytest.approx(-83.0275, abs=0.001)
+
+
+def test_healthy_market_fallers_skips_nonpositive_prior_value():
+    market = pl.DataFrame({
+        "sleeper_id": ["1"],
+        "market_name": ["Invalid Riser"],
+        "market_position": ["RB"],
+        "market_value": [10.0],
+        "trend_30_day": [20.0],
+    })
+    players = pl.DataFrame({
+        "player_id": ["1"], "injury_status": [None],
+        "status": ["Active"], "active": [True],
+    })
+
+    result = healthy_market_fallers(market, players, {"1"})
+
+    assert result.is_empty()

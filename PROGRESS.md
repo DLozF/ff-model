@@ -18,6 +18,7 @@
 | T01 | done | Partial Yahoo import: league scoring refit, real roster in, P6/P8 rebuilt |
 | T02 | done | Blend backtest rejected; explainers built; scorecard and misses written |
 | T03 | done | FantasyCalc fallback fixed; daily and waiver jobs verified live |
+| T04-1 | done | Market faller percentages use prior value; reports scoped and reordered |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -28,6 +29,7 @@
 - P8 applies FantasyCalc r >= 0.90 before raw post-trade roster WELP, then exact roster balancing and top-30 confirmation.
 - FantasyCalc-unmatched players receive V=0 and are written to `logs/fantasycalc_unmatched.log`.
 - Yahoo Fantasy API access currently requires manual approval before OAuth app use; setup documentation includes the approval step.
+- T04 Item 1 treats the top 15 waiver targets as the 15 free agents with the highest rest-of-season projection.
 
 ## Blocked
 - P3 calibration gate: after rebuilding 2026 week 6 from nflverse actuals, the rolling eight-week b/s candidate improved sample-weighted CRPS in 2023, 2024, and 2026, but not 2025, and still failed the every-position coverage gate. It was not adopted. Full results: reports/calibration.md.
@@ -119,3 +121,4 @@
 - T03 A2: live world now has 535 players: 195 FantasyCalc, 272 model fallback, and 68 out. Full P8 comparison rerun produced 44,880 candidates, 24,184 market passes, 260 WELP passes, 30 trades, and 10 waivers in 551.802s.
 - T03 A4: daily report shows latest weekly 80% coverage by position; QB was 82.8% on 29 played week-6 rows. QB E5 remains deferred until eight completed 2026 weeks.
 - T03 automation: live daily completed in 124.493s; live waivers completed in 165.037s with 10 enriched moves. Both failure markers were cleared after success.
+- T04 Item 1: prior-value percentage changes replace current-value division; V=37/trend=-181 is -83.03%. Current scoped news fell from 47 league-wide names to 3 roster/top-15 waiver names, capped at 10. Trade and waiver moves now precede injury/news sections, with news last.
