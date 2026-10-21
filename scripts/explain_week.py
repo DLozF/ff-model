@@ -45,18 +45,18 @@ def pregame_features(player: dict, frame: pl.DataFrame, snaps: pl.DataFrame, opp
         & ((pl.col("season") < season) | ((pl.col("season") == season) & (pl.col("week") < week)))
     ).sort("season", "week")
     points = history.get_column("act_pts").to_numpy()
-    snap_rows = snaps.filter((pl.col("season") == season) & (pl.col("week") < week))
-    team_total = snap_rows.group_by("team").agg(pl.col("offense_snaps").sum().alias("total")).filter(pl.col("team") == player["team"])
-    mine = snap_rows.filter(
-        (pl.col("season") == season) & (pl.col("week") < week) & (pl.col("team") == player["team"]) & (pl.col("player") == player["name"])
-    ).group_by("season").agg(pl.col("offense_snaps").sum().alias("mine"))
-    snap_share = pct(
-        mine.get_column("mine").sum() if mine.height else 0.0,
-        team_total.get_column("total").sum() if team_total.height else 0.0,
-    )
+    mine = snaps.filter(
+        (pl.col("season") == season) & (pl.col("week") < week)
+        & (pl.col("team") == player["team"])
+        & (pl.col("player") == player["name"])
+    ).drop_nulls("offense_pct")
+    snap_share = float(mine.get_column("offense_pct").mean()) if mine.height else 0.0
     opp = opportunity.filter((pl.col("season") == season) & (pl.col("week") < week))
     opp_player = opp.filter(opp["player_id"] == player["gsis_id"]) if player["gsis_id"] else opp.head(0)
-    team_pass = opp.group_by("posteam").agg(pl.col("pass_attempt_team").sum().alias("attempts")).filter(pl.col("posteam") == player["team"])
+    team_pass = (
+        opp.filter(pl.col("posteam") == player["team"])
+        .group_by("week").agg(pl.col("pass_attempt_team").first().alias("attempts"))
+    )
     targets = float(opp_player.get_column("rec_attempt").sum()) if opp_player.height else 0.0
     carries = float(opp_player.get_column("rush_attempt").sum()) if opp_player.height else 0.0
     game = schedules.filter(

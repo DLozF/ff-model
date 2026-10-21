@@ -21,6 +21,7 @@
 | T04-1 | done | Market faller percentages use prior value; reports scoped and reordered |
 | T04-2 | done | Distinct waiver adds, drop protection, priority gate, and tolerant Yahoo pool parser |
 | T04-3 | done | Yahoo loader backs up, merges safely, reports conflicts, and preserves config on parse failure |
+| T04-4 | done | Explainer snap and target shares use valid team-game denominators |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -128,3 +129,4 @@
 - T04 Item 1: prior-value percentage changes replace current-value division; V=37/trend=-181 is -83.03%. Current scoped news fell from 47 league-wide names to 3 roster/top-15 waiver names, capped at 10. Trade and waiver moves now precede injury/news sections, with news last.
 - T04 Item 2: prior report had 10 rows but only 5 distinct adds. The rebuilt estimated pool gives all 11 synthetic opponents exactly one K and one DEF; the current protected run screened 680 pairs and found 0 qualifying distinct adds. Fresh `available.txt` pages are now the exclusive pool, with unparsed/unmatched lines logged. Rolling priority requires playoff gain >=0.03 plus a starting or bye-week role.
 - T04 Item 3: Yahoo imports now validate all tables before writes, create `config.yaml.pre-yahoo-<timestamp>`, merge missing keys only, preserve milestones/40+ bonuses/IDP/waiver/trade/reseeding keys, and write conflicts to `reports/yahoo_load_diff.md`. A broken standings fixture left config byte-identical; a pass-TD conflict kept 6.0 over API 4.0. Partial import remains true unless all 12 rosters, standings, and a schedule are present.
+- T04 Item 4: all six explainers reran. Snap/target old->new: Malik Nabers .0614/.0229 -> .6800/.2289; Emari Demercado .0078/.0000 -> .0900/.0000; Tanner Hudson .0095/.0029 -> .1600/.0291; Tyrod Taylor, Brian Thomas week 1, and Brandon Aubrey remained .0000/.0000 because no applicable prior role history.

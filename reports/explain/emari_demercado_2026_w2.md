@@ -10,7 +10,7 @@
     "last3_avg": 3.8000000000000003,
     "season_avg": 5.125,
     "ewma": 4.353875392924054,
-    "snap_share": 0.0078,
+    "snap_share": 0.09,
     "target_share": 0.0,
     "carries": 2.0,
     "team_implied_points": 27.5,
