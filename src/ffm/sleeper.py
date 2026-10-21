@@ -78,10 +78,12 @@ def _write_records(records: list[dict], path: Path) -> None:
     pl.from_dicts(records, infer_schema_length=None).write_parquet(path)
 
 
-def cache_week(season: int, week: int, kind: str, cache: Path) -> Path:
+def cache_week(
+    season: int, week: int, kind: str, cache: Path, force: bool = False
+) -> Path:
     """Cache one Sleeper projection or stats week as Parquet."""
     path = cache / f"sleeper_{kind}_{season}_w{week:02d}.parquet"
-    if path.exists():
+    if path.exists() and not force:
         return path
     if kind == "projections":
         urls = [
@@ -103,10 +105,10 @@ def cache_week(season: int, week: int, kind: str, cache: Path) -> Path:
     return path
 
 
-def cache_players(cache: Path) -> Path:
+def cache_players(cache: Path, force: bool = False) -> Path:
     """Cache Sleeper's NFL player dictionary."""
     path = cache / "sleeper_players.parquet"
-    if not path.exists():
+    if force or not path.exists():
         _write_records(player_records(get_json(f"{BASE}/v1/players/nfl")), path)
     return path
 
