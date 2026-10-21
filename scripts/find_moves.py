@@ -334,7 +334,10 @@ def main():
         )
     if not confirmed:
         trade_lines.append("| - | - | - | - | - | - | - | - | - | - | - | - | No qualifying trades | - | - | - |")
-    (ROOT / "reports" / f"trade_ideas_{date}.md").write_text("\n".join(trade_lines) + "\n", encoding="utf-8")
+    if not args.waivers_only:
+        (ROOT / "reports" / f"trade_ideas_{date}.md").write_text(
+            "\n".join(trade_lines) + "\n", encoding="utf-8"
+        )
 
     waiver_lines = [
         f"# Waiver ideas: {date}", "",

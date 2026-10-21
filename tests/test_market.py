@@ -4,7 +4,7 @@ import polars as pl
 
 from ffm.market import (
     acceptance_cutoffs, acceptance_label, acceptance_status, load_market,
-    market_ratio, package_value,
+    market_ratio, package_value, write_model_vs_market,
 )
 
 
@@ -73,3 +73,25 @@ def test_acceptance_cutoffs_fit_after_twenty_resolved_rows(tmp_path):
     assert cutoffs["calibrated"] is True
     assert cutoffs["resolved"] == 20
     assert cutoffs["likely"] > cutoffs["possible"]
+
+
+def test_write_model_vs_market_preserves_forward_test_section(tmp_path):
+    path = tmp_path / "model_vs_market.md"
+    path.write_text(
+        "old\n<!-- forward-test:start -->\nkept\n<!-- forward-test:end -->\n",
+        encoding="utf-8",
+    )
+    players = pl.DataFrame({
+        "player_id": ["1"], "name": ["Player"], "position": ["RB"],
+        "ros_points": [100.0],
+    })
+    market = pl.DataFrame({
+        "sleeper_id": ["1"], "market_value": [1000.0],
+        "market_position_rank": [1],
+    })
+
+    write_model_vs_market(players, market, path)
+
+    text = path.read_text(encoding="utf-8")
+    assert "kept" in text
+    assert text.count("<!-- forward-test:start -->") == 1

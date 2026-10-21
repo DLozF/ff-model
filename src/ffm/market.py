@@ -227,7 +227,19 @@ def write_model_vs_market(players: pl.DataFrame, market: pl.DataFrame, path: str
             )
         return output + [""]
 
+    path = Path(path)
+    forward_section = ""
+    start = "<!-- forward-test:start -->"
+    end = "<!-- forward-test:end -->"
+    if path.exists():
+        existing = path.read_text(encoding="utf-8")
+        if start in existing and end in existing:
+            body = existing.split(start, 1)[1].split(end, 1)[0]
+            forward_section = f"{start}{body}{end}"
     lines = ["# Model vs market", "", "Top 150 players by FantasyCalc redraft value.", ""]
     lines += table("## Market ranks higher than model", compared.sort("rank_gap", descending=True).head(15))
     lines += table("## Model ranks higher than market", compared.sort("rank_gap").head(15))
-    Path(path).write_text("\n".join(lines), encoding="utf-8")
+    content = "\n".join(lines).rstrip() + "\n"
+    if forward_section:
+        content += "\n" + forward_section + "\n"
+    path.write_text(content, encoding="utf-8")
