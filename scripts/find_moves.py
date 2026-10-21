@@ -18,6 +18,7 @@ from ffm.market import (
     package_value,
     write_model_vs_market,
 )
+from ffm.market_fallback import apply_model_fallback
 from ffm.season import roster_team_scores, simulate_team_scores
 from ffm.trade import (
     apply_trade, fragility_label, metric_delta, roster_welp,
@@ -59,17 +60,20 @@ def main():
     players = pl.read_parquet(world_dir / "player_index.parquet")
     market = load_market(ROOT / "data/cache")
     sleeper_players = pl.read_parquet(ROOT / "data/cache/sleeper_players.parquet")
+    overrides = load_injury_overrides(ROOT / "overrides.yaml")
+    if not {"market_value_final", "value_source"}.issubset(players.columns):
+        players = apply_model_fallback(
+            players, market, sleeper_players,
+            lineup=config["league"]["lineup"], overrides=overrides,
+        )
     news = healthy_market_fallers(market, sleeper_players)
     write_model_vs_market(players, market, ROOT / "reports/model_vs_market.md")
     league = json.loads((ROOT / "models/synthetic_league.json").read_text())
     names = [row["name"] or row["player_id"] for row in players.iter_rows(named=True)]
     positions = players.get_column("position").to_numpy()
     ros = players.get_column("ros_points").to_numpy()
-    market_lookup = dict(zip(market.get_column("sleeper_id"), market.get_column("market_value")))
-    player_values = np.array([
-        market_lookup.get(str(player_id), 0.0) for player_id in players.get_column("player_id")
-    ])
-    overrides = load_injury_overrides(ROOT / "overrides.yaml")
+    player_values = players.get_column("market_value_final").to_numpy()
+    value_sources = players.get_column("value_source").to_list()
     pending_overrides = [
         row for row in overrides if str(row.get("weeks", "")).upper() == "TBD"
     ]
@@ -232,14 +236,16 @@ def main():
         f"Screened {candidate_count} trades; {market_pass} passed market r >= 0.90; "
         f"{len(screened)} passed WELP; confirmed top {min(30, len(screened))}.",
         "", "Stress case: score spread ×1.25; QB availability thinned by one-seventh.",
-        "", "| Rank | Partner | Give | Get | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Stress | Stability | Acceptance |",
-        "|---:|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|",
+        "", "| Rank | Partner | Give | Give source | Get | Get source | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Stress | Stability | Acceptance |",
+        "|---:|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|",
     ])
     for rank, row in enumerate(confirmed, 1):
         trade_lines.append(
             f"| {rank} | {league['teams'][row['other_team']]} | "
             f"{', '.join(names[player] for player in row['give'])} | "
+            f"{', '.join(value_sources[player] for player in row['give'])} | "
             f"{', '.join(names[player] for player in row['get'])} | "
+            f"{', '.join(value_sources[player] for player in row['get'])} | "
             f"{row['other_receives_value']:.1f} | {row['other_gives_value']:.1f} | "
             f"{row['ratio']:.3f}{' OVERPAY' if row['ratio'] > 1.25 else ''} | {row['my_welp']:+.2f} | "
             f"{row['mine'][criterion]['mean']:+.4f} | {row['other']['playoffs']['mean']:+.4f} | "
@@ -247,7 +253,7 @@ def main():
             f"{row['fragility']}: {row['fragility_reason']} | {row['acceptance']} |"
         )
     if not confirmed:
-        trade_lines.append("| - | - | - | - | - | - | - | - | - | - | No qualifying trades | - | - | - |")
+        trade_lines.append("| - | - | - | - | - | - | - | - | - | - | - | - | No qualifying trades | - | - | - |")
     (ROOT / "reports" / f"trade_ideas_{date}.md").write_text("\n".join(trade_lines) + "\n", encoding="utf-8")
 
     waiver_lines = [
@@ -267,17 +273,18 @@ def main():
     waiver_lines.extend([
         "", "## Waiver results", "",
         f"Screened {len(top_free_agents) * len(rosters[my_team])} add/drop pairs; confirmed top {min(10, len(waiver_screen))}.",
-        "", "| Rank | Add | Drop | Add V | Drop V | WELP gain | Verdict metric gain | Verdict |",
-        "|---:|---|---|---:|---:|---:|---:|---|",
+        "", "| Rank | Add | Add source | Drop | Drop source | Add V | Drop V | WELP gain | Verdict metric gain | Verdict |",
+        "|---:|---|---|---|---|---:|---:|---:|---:|---|",
     ])
     for rank, row in enumerate(waiver_results, 1):
         waiver_lines.append(
-            f"| {rank} | {names[row['add']]} | {names[row['drop']]} | "
+            f"| {rank} | {names[row['add']]} | {value_sources[row['add']]} | "
+            f"{names[row['drop']]} | {value_sources[row['drop']]} | "
             f"{player_values[row['add']]:.1f} | {player_values[row['drop']]:.1f} | {row['gain']:+.2f} | "
             f"{row['mine'][criterion]['mean']:+.4f} | {row['verdict']} |"
         )
     if not waiver_results:
-        waiver_lines.append("| - | - | - | - | - | - | - | No positive WELP moves |")
+        waiver_lines.append("| - | - | - | - | - | - | - | - | - | No positive WELP moves |")
     (ROOT / "reports" / f"waivers_{date}.md").write_text("\n".join(waiver_lines) + "\n", encoding="utf-8")
     runtime = time.perf_counter() - started
     print(f"trade_candidates: {candidate_count}")

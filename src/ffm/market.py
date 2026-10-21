@@ -44,12 +44,13 @@ def cache_fantasycalc(cache: str | Path, now: datetime | None = None) -> Path:
 def load_market(cache: str | Path, now: datetime | None = None) -> pl.DataFrame:
     """Load normalized FantasyCalc values from the daily cache."""
     frame = pl.read_parquet(cache_fantasycalc(cache, now))
+    team_column = "player_team" if "player_team" in frame.columns else "player_maybeTeam"
     return frame.select(
         pl.col("fetched_at"),
         pl.col("player_sleeperId").cast(pl.String).alias("sleeper_id"),
         pl.col("player_name").alias("market_name"),
         pl.col("player_position").alias("market_position"),
-        pl.col("player_team").alias("market_team"),
+        pl.col(team_column).alias("market_team"),
         pl.col("redraftValue").cast(pl.Float64).alias("market_value"),
         pl.col("trend30Day").cast(pl.Float64).alias("trend_30_day"),
         pl.col("overallRank").cast(pl.Int64).alias("market_overall_rank"),

@@ -116,6 +116,7 @@ def test_out_for_season_player_gets_zero_value():
     row = result.filter(pl.col("player_id") == "u1")
     assert row.get_column("market_value_final").item() == 0.0
     assert row.get_column("value_source").item() == "out"
+    assert row.get_column("injury_status").item() == "IR"
 
 
 def test_second_pass_matches_by_name_position_and_team():

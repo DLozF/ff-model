@@ -175,7 +175,8 @@ def main():
 
     draft_players = players.select(
         pl.col("player_id").alias("sleeper_id"), "name",
-        pl.col("position").alias("pos"), "ros_points", "market_value",
+        pl.col("position").alias("pos"), "ros_points",
+        pl.col("market_value_final").alias("market_value"),
     )
     league = partial_synthetic_league(
         draft_players, real_roster_ids, config["league"]["my_team"],

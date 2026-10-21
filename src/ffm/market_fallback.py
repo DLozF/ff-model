@@ -108,9 +108,20 @@ def apply_model_fallback(
         left_on="player_id", right_on="sleeper_id", how="left",
     )
     status = sleeper_players.select(
-        pl.col("player_id").cast(pl.String).alias("_pid"), "injury_status", "status"
+        pl.col("player_id").cast(pl.String).alias("_pid"),
+        pl.col("injury_status").alias("_fallback_injury_status"),
+        pl.col("status").alias("_fallback_status"),
     ).unique(subset="_pid")
     joined = joined.join(status, left_on="player_id", right_on="_pid", how="left")
+    if "injury_status" in joined.columns:
+        joined = joined.with_columns(
+            pl.coalesce(["injury_status", "_fallback_injury_status"]).alias("injury_status")
+        )
+    else:
+        joined = joined.with_columns(
+            pl.col("_fallback_injury_status").alias("injury_status")
+        )
+    joined = joined.with_columns(pl.col("_fallback_status").alias("status"))
     joined = joined.with_columns(pl.col("market_value").is_not_null().alias("market_matched"))
 
     # Second pass: normalized name + position + team for still-unmatched players.
@@ -229,4 +240,7 @@ def apply_model_fallback(
     )
     return result.with_columns(
         pl.col("fallback_value").fill_null(0.0).alias("market_value_final")
-    ).drop(["market_matched", "_key", "model_value", "fallback_value", "market_value", "injury_status", "status"], strict=False)
+    ).drop([
+        "market_matched", "_key", "model_value", "fallback_value", "market_value",
+        "status", "_fallback_injury_status", "_fallback_status",
+    ], strict=False)

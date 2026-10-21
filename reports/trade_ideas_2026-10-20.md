@@ -54,39 +54,39 @@
 
 ## Trade results
 
-Screened 44880 trades; 24184 passed market r >= 0.90; 255 passed WELP; confirmed top 30.
+Screened 44880 trades; 24184 passed market r >= 0.90; 260 passed WELP; confirmed top 30.
 
 Stress case: score spread ×1.25; QB availability thinned by one-seventh.
 
-| Rank | Partner | Give | Get | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Stress | Stability | Acceptance |
-|---:|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|
-| 1 | Team 3 | Malik Nabers, A.J. Brown | Javonte Williams | 7252.0 | 4990.0 | 1.453 OVERPAY | +21.37 | +0.0618 | -0.0146 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 2 | Team 3 | Zay Flowers | Javonte Williams, Jacoby Brissett | 5154.0 | 5120.0 | 1.007 | +17.95 | +0.0606 | +0.0300 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 3 | Team 2 | Tyler Warren, Malik Washington | Sam LaPorta | 2615.0 | 2611.0 | 1.002 | +22.05 | +0.0530 | -0.0090 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 4 | Team 3 | Zay Flowers, KC Concepcion | Javonte Williams | 5435.5 | 4990.0 | 1.089 | +12.31 | +0.0528 | +0.0170 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 5 | Team 3 | Zay Flowers | Javonte Williams | 5154.0 | 4990.0 | 1.033 | +12.33 | +0.0500 | -0.0094 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 6 | Team 3 | Zay Flowers, Dylan Sampson | Javonte Williams | 5154.0 | 4990.0 | 1.033 | +11.79 | +0.0498 | -0.0090 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 7 | Team 3 | Zay Flowers, Malik Washington | Javonte Williams | 5359.0 | 4990.0 | 1.074 | +12.33 | +0.0496 | +0.0218 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 8 | Team 3 | Zay Flowers, Germie Bernard | Javonte Williams | 5443.0 | 4990.0 | 1.091 | +12.33 | +0.0494 | +0.0138 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 9 | Team 3 | Zay Flowers | Javonte Williams, Jadarian Price | 5154.0 | 5225.0 | 0.986 | +12.33 | +0.0484 | +0.0390 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
-| 10 | Team 3 | Zay Flowers | Javonte Williams, Kendre Miller | 5154.0 | 5112.5 | 1.008 | +12.33 | +0.0476 | +0.0314 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 11 | Team 3 | Zay Flowers, Jordyn Tyson | Javonte Williams | 5487.0 | 4990.0 | 1.100 | +11.88 | +0.0460 | +0.0188 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 12 | Team 3 | Zay Flowers, Xavier Worthy | Javonte Williams | 5422.0 | 4990.0 | 1.087 | +11.68 | +0.0444 | +0.0222 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 13 | Team 3 | Malik Nabers, Xavier Worthy | Garrett Wilson | 5750.0 | 4514.0 | 1.274 OVERPAY | +15.31 | +0.0392 | +0.0048 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 14 | Team 3 | Malik Nabers, Malik Washington | Garrett Wilson | 5687.0 | 4514.0 | 1.260 OVERPAY | +16.18 | +0.0356 | -0.0032 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 15 | Team 4 | KC Concepcion, Jordyn Tyson | Jordan Mason | 947.5 | 990.0 | 0.957 | +12.17 | +0.0322 | +0.0134 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
-| 16 | Team 4 | Germie Bernard, KC Concepcion | Rachaad White | 859.5 | 542.0 | 1.586 OVERPAY | +10.16 | +0.0312 | +0.0080 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 17 | Team 4 | Germie Bernard | Rachaad White | 578.0 | 542.0 | 1.066 | +10.98 | +0.0306 | +0.0090 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 18 | Team 4 | Germie Bernard, Dylan Sampson | Rachaad White | 578.0 | 542.0 | 1.066 | +10.98 | +0.0306 | +0.0090 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 19 | Team 4 | Germie Bernard, Malik Washington | Rachaad White | 783.0 | 542.0 | 1.445 OVERPAY | +10.98 | +0.0290 | +0.0136 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 20 | Team 4 | Germie Bernard, Jordyn Tyson | Jordan Mason | 955.0 | 990.0 | 0.965 | +12.54 | +0.0284 | +0.0146 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
-| 21 | Team 2 | KC Concepcion | Justin Herbert, Jake Ferguson | 563.0 | 603.0 | 0.934 | +10.74 | +0.0278 | +0.0324 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
-| 22 | Team 4 | Jordyn Tyson | Rachaad White | 666.0 | 542.0 | 1.229 | +10.62 | +0.0278 | +0.0088 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 23 | Team 4 | Germie Bernard, Jordyn Tyson | Rachaad White | 955.0 | 542.0 | 1.762 OVERPAY | +10.62 | +0.0278 | +0.0128 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 24 | Team 4 | Xavier Worthy, Dylan Sampson | Rachaad White | 536.0 | 542.0 | 0.989 | +10.17 | +0.0266 | +0.0168 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
-| 25 | Team 4 | Tyler Warren | Colston Loveland, Jordan Mason | 2410.0 | 1755.0 | 1.373 OVERPAY | +10.84 | +0.0264 | +0.0304 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 26 | Team 4 | Malik Washington, Jordyn Tyson | Rachaad White | 871.0 | 542.0 | 1.607 OVERPAY | +10.62 | +0.0264 | +0.0202 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 27 | Team 4 | Xavier Worthy, Jordyn Tyson | Jordan Mason | 934.0 | 990.0 | 0.943 | +11.08 | +0.0262 | +0.0248 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
-| 28 | Team 4 | Xavier Worthy | Rachaad White | 536.0 | 542.0 | 0.989 | +10.30 | +0.0242 | +0.0172 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
-| 29 | Team 4 | Germie Bernard, Xavier Worthy | Rachaad White | 846.0 | 542.0 | 1.561 OVERPAY | +10.30 | +0.0242 | +0.0170 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
-| 30 | Team 4 | Xavier Worthy, Malik Washington | Rachaad White | 741.0 | 542.0 | 1.367 OVERPAY | +10.30 | +0.0240 | +0.0246 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| Rank | Partner | Give | Give source | Get | Get source | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Stress | Stability | Acceptance |
+|---:|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| 1 | Team 3 | Malik Nabers, A.J. Brown | fantasycalc, fantasycalc | Javonte Williams | fantasycalc | 7252.0 | 4990.0 | 1.453 OVERPAY | +21.41 | +0.0674 | -0.0138 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 2 | Team 2 | Tyler Warren, Malik Washington | fantasycalc, fantasycalc | Sam LaPorta | fantasycalc | 2615.0 | 2611.0 | 1.002 | +22.05 | +0.0570 | -0.0108 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 3 | Team 3 | Zay Flowers | fantasycalc | Javonte Williams, Jacoby Brissett | fantasycalc, fantasycalc | 5154.0 | 5120.0 | 1.007 | +17.99 | +0.0544 | +0.0298 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 4 | Team 3 | Zay Flowers, KC Concepcion | fantasycalc, fantasycalc | Javonte Williams | fantasycalc | 5435.5 | 4990.0 | 1.089 | +12.30 | +0.0480 | +0.0314 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 5 | Team 3 | Zay Flowers | fantasycalc | Javonte Williams | fantasycalc | 5154.0 | 4990.0 | 1.033 | +12.37 | +0.0462 | -0.0008 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 6 | Team 3 | Zay Flowers, Dylan Sampson | fantasycalc, out | Javonte Williams | fantasycalc | 5154.0 | 4990.0 | 1.033 | +11.76 | +0.0462 | +0.0012 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 7 | Team 3 | Zay Flowers, Malik Washington | fantasycalc, fantasycalc | Javonte Williams | fantasycalc | 5359.0 | 4990.0 | 1.074 | +12.37 | +0.0460 | +0.0332 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 8 | Team 3 | Zay Flowers, Jordyn Tyson | fantasycalc, fantasycalc | Javonte Williams | fantasycalc | 5487.0 | 4990.0 | 1.100 | +11.94 | +0.0450 | +0.0268 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 9 | Team 3 | Zay Flowers, Germie Bernard | fantasycalc, fantasycalc | Javonte Williams | fantasycalc | 5443.0 | 4990.0 | 1.091 | +12.37 | +0.0448 | +0.0190 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 10 | Team 3 | Zay Flowers | fantasycalc | Javonte Williams, Kendre Miller | fantasycalc, fantasycalc | 5154.0 | 5112.5 | 1.008 | +12.37 | +0.0444 | +0.0314 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 11 | Team 3 | Zay Flowers | fantasycalc | Javonte Williams, Jadarian Price | fantasycalc, fantasycalc | 5154.0 | 5225.0 | 0.986 | +12.37 | +0.0438 | +0.0426 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
+| 12 | Team 3 | Zay Flowers, Xavier Worthy | fantasycalc, fantasycalc | Javonte Williams | fantasycalc | 5422.0 | 4990.0 | 1.087 | +11.70 | +0.0428 | +0.0320 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 13 | Team 3 | Malik Nabers, Malik Washington | fantasycalc, fantasycalc | Garrett Wilson | fantasycalc | 5687.0 | 4514.0 | 1.260 OVERPAY | +16.16 | +0.0360 | +0.0012 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 14 | Team 3 | Malik Nabers, Xavier Worthy | fantasycalc, fantasycalc | Garrett Wilson | fantasycalc | 5750.0 | 4514.0 | 1.274 OVERPAY | +15.26 | +0.0332 | +0.0044 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 15 | Team 4 | Tyler Warren | fantasycalc | Colston Loveland, Jordan Mason | fantasycalc, fantasycalc | 2410.0 | 1755.0 | 1.373 OVERPAY | +10.89 | +0.0294 | +0.0372 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 16 | Team 4 | KC Concepcion, Jordyn Tyson | fantasycalc, fantasycalc | Jordan Mason | fantasycalc | 947.5 | 990.0 | 0.957 | +12.20 | +0.0286 | +0.0128 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
+| 17 | Team 4 | Xavier Worthy, Dylan Sampson | fantasycalc, out | Rachaad White | fantasycalc | 536.0 | 542.0 | 0.989 | +10.21 | +0.0270 | +0.0188 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
+| 18 | Team 4 | Germie Bernard | fantasycalc | Rachaad White | fantasycalc | 578.0 | 542.0 | 1.066 | +10.98 | +0.0262 | +0.0026 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 19 | Team 4 | Germie Bernard, Malik Washington | fantasycalc, fantasycalc | Rachaad White | fantasycalc | 783.0 | 542.0 | 1.445 OVERPAY | +10.98 | +0.0262 | +0.0086 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 20 | Team 4 | Germie Bernard, Dylan Sampson | fantasycalc, out | Rachaad White | fantasycalc | 578.0 | 542.0 | 1.066 | +10.98 | +0.0262 | +0.0026 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 21 | Team 4 | Malik Washington, Jordyn Tyson | fantasycalc, fantasycalc | Rachaad White | fantasycalc | 871.0 | 542.0 | 1.607 OVERPAY | +10.66 | +0.0260 | +0.0212 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 22 | Team 4 | Jordyn Tyson | fantasycalc | Rachaad White | fantasycalc | 666.0 | 542.0 | 1.229 | +10.66 | +0.0258 | +0.0054 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 23 | Team 4 | Germie Bernard, KC Concepcion | fantasycalc, fantasycalc | Rachaad White | fantasycalc | 859.5 | 542.0 | 1.586 OVERPAY | +10.20 | +0.0252 | +0.0026 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 24 | Team 4 | Germie Bernard, Jordyn Tyson | fantasycalc, fantasycalc | Jordan Mason | fantasycalc | 955.0 | 990.0 | 0.965 | +12.62 | +0.0250 | +0.0162 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
+| 25 | Team 4 | Germie Bernard, Jordyn Tyson | fantasycalc, fantasycalc | Rachaad White | fantasycalc | 955.0 | 542.0 | 1.762 OVERPAY | +10.66 | +0.0244 | +0.0112 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 26 | Team 4 | Xavier Worthy | fantasycalc | Rachaad White | fantasycalc | 536.0 | 542.0 | 0.989 | +10.32 | +0.0226 | +0.0188 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
+| 27 | Team 4 | Germie Bernard, Xavier Worthy | fantasycalc, fantasycalc | Rachaad White | fantasycalc | 846.0 | 542.0 | 1.561 OVERPAY | +10.32 | +0.0226 | +0.0136 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 28 | Team 4 | Xavier Worthy, Jordyn Tyson | fantasycalc, fantasycalc | Jordan Mason | fantasycalc | 934.0 | 990.0 | 0.943 | +11.06 | +0.0218 | +0.0250 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |
+| 29 | Team 4 | Xavier Worthy, Malik Washington | fantasycalc, fantasycalc | Rachaad White | fantasycalc | 741.0 | 542.0 | 1.367 OVERPAY | +10.32 | +0.0216 | +0.0218 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | LIKELY |
+| 30 | Team 2 | KC Concepcion | fantasycalc | Justin Herbert, Jake Ferguson | fantasycalc, fantasycalc | 563.0 | 603.0 | 0.934 | +10.81 | +0.0212 | +0.0326 | ACCEPT | ACCEPT | ROBUST: stress verdict unchanged | POSSIBLE |

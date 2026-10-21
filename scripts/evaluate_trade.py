@@ -18,6 +18,7 @@ from ffm.market import (
     news_lines,
     package_value,
 )
+from ffm.market_fallback import apply_model_fallback
 from ffm.trade import (
     apply_trade, evaluate_rosters, fragility_label, fuzzy_match, metric_delta,
     roster_lineup_points, stress_worlds, trade_verdict,
@@ -68,7 +69,7 @@ def write_report(
     path, league, names, weeks, before, after, summaries, my_team, other_team,
     verdict, acceptance, adjustments, exposure_before, exposure_after, ratio,
     other_receives_value, other_gives_value, news, pending_overrides,
-    stress_verdict, fragility, fragility_reason,
+    stress_verdict, fragility, fragility_reason, give_details, get_details,
 ):
     """Write a trade decision report."""
     lines = [
@@ -92,6 +93,8 @@ def write_report(
         f"- Market ratio r: **{ratio:.3f}**{' — OVERPAY' if ratio > 1.25 else ''}",
         f"- Other team receives V: **{other_receives_value:.1f}**",
         f"- Other team gives V: **{other_gives_value:.1f}**",
+        f"- Give values: {give_details or 'none'}",
+        f"- Get values: {get_details or 'none'}",
         f"- Other-team model playoff delta (info only): "
         f"**{summaries[other_team]['playoffs']['mean']:+.4f}**", "",
     ])
@@ -136,16 +139,20 @@ def main():
     players = pl.read_parquet(world_dir / "player_index.parquet")
     market = load_market(ROOT / "data/cache")
     sleeper_players = pl.read_parquet(ROOT / "data/cache/sleeper_players.parquet")
+    overrides = load_injury_overrides(ROOT / "overrides.yaml")
+    if not {"market_value_final", "value_source"}.issubset(players.columns):
+        players = apply_model_fallback(
+            players, market, sleeper_players,
+            lineup=config["league"]["lineup"], overrides=overrides,
+        )
     news = healthy_market_fallers(market, sleeper_players)
     league = json.loads((ROOT / "models/synthetic_league.json").read_text())
     names = players.get_column("name").fill_null(players.get_column("player_id")).to_list()
     positions = players.get_column("position").to_numpy()
     nfl_teams = players.get_column("team").to_numpy()
     ros_points = players.get_column("ros_points").to_numpy()
-    market_lookup = dict(zip(market.get_column("sleeper_id"), market.get_column("market_value")))
-    player_values = np.array([
-        market_lookup.get(str(player_id), 0.0) for player_id in players.get_column("player_id")
-    ])
+    player_values = players.get_column("market_value_final").to_numpy()
+    value_sources = players.get_column("value_source").to_list()
     my_team = league["teams"].index(config["league"]["my_team"])
     other_team = league["teams"].index(args.team)
     give = [fuzzy_match(name, names) for name in parse_names(args.give)]
@@ -185,7 +192,6 @@ def main():
     other_gives_value = package_value(player_values[get])
     ratio = market_ratio(other_receives_value, other_gives_value)
     acceptance = acceptance_label(ratio)
-    overrides = load_injury_overrides(ROOT / "overrides.yaml")
     pending_overrides = [
         row for row in overrides if str(row.get("weeks", "")).upper() == "TBD"
     ]
@@ -196,11 +202,19 @@ def main():
     date = datetime.now(ZoneInfo("America/Chicago")).date().isoformat()
     slug = re.sub(r"[^a-z0-9]+", "_", f"{args.team}_{'_'.join(args.give.split(','))}_{'_'.join(args.get.split(','))}".lower()).strip("_") or "empty"
     path = ROOT / "reports" / f"trade_{date}_{slug}.md"
+    give_details = ", ".join(
+        f"{names[player]} V={player_values[player]:.1f} ({value_sources[player]})"
+        for player in give
+    )
+    get_details = ", ".join(
+        f"{names[player]} V={player_values[player]:.1f} ({value_sources[player]})"
+        for player in get
+    )
     write_report(
         path, league, names, weeks, before, after, summaries, my_team, other_team,
         verdict, acceptance, adjustments, before_exposure, after_exposure, ratio,
         other_receives_value, other_gives_value, news, pending_overrides,
-        stress_verdict, fragility, fragility_reason,
+        stress_verdict, fragility, fragility_reason, give_details, get_details,
     )
     print(
         f"Verdict: {verdict}; acceptance: {acceptance}; r={ratio:.3f}; "
