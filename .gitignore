@@ -1,6 +1,7 @@
 data/cache/
 data/yahoo_paste/
 data/league_csv/
+data/trade_log.csv
 .env
 *.key
 logs/

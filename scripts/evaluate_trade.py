@@ -11,7 +11,9 @@ import polars as pl
 from ffm.config import load_config
 from ffm.lineup import greedy
 from ffm.market import (
+    acceptance_cutoffs,
     acceptance_label,
+    acceptance_status,
     healthy_market_fallers,
     load_market,
     market_ratio,
@@ -70,6 +72,7 @@ def write_report(
     verdict, acceptance, adjustments, exposure_before, exposure_after, ratio,
     other_receives_value, other_gives_value, news, pending_overrides,
     stress_verdict, fragility, fragility_reason, give_details, get_details,
+    acceptance_note,
 ):
     """Write a trade decision report."""
     lines = [
@@ -90,6 +93,7 @@ def write_report(
         f"- Stress verdict: **{stress_verdict}** — **{fragility}** ({fragility_reason})",
         "- Stress case: score spread ×1.25; QB availability thinned by one-seventh.",
         f"- Other-team acceptance: **{acceptance}**",
+        f"- {acceptance_note}",
         f"- Market ratio r: **{ratio:.3f}**{' — OVERPAY' if ratio > 1.25 else ''}",
         f"- Other team receives V: **{other_receives_value:.1f}**",
         f"- Other team gives V: **{other_gives_value:.1f}**",
@@ -191,7 +195,8 @@ def main():
     other_receives_value = package_value(player_values[give])
     other_gives_value = package_value(player_values[get])
     ratio = market_ratio(other_receives_value, other_gives_value)
-    acceptance = acceptance_label(ratio)
+    cutoffs = acceptance_cutoffs(ROOT / "data/trade_log.csv")
+    acceptance = acceptance_label(ratio, cutoffs)
     pending_overrides = [
         row for row in overrides if str(row.get("weeks", "")).upper() == "TBD"
     ]
@@ -215,6 +220,7 @@ def main():
         verdict, acceptance, adjustments, before_exposure, after_exposure, ratio,
         other_receives_value, other_gives_value, news, pending_overrides,
         stress_verdict, fragility, fragility_reason, give_details, get_details,
+        acceptance_status(cutoffs),
     )
     print(
         f"Verdict: {verdict}; acceptance: {acceptance}; r={ratio:.3f}; "

@@ -1,7 +1,9 @@
+import csv
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import numpy as np
 import polars as pl
 import requests
 
@@ -95,11 +97,75 @@ def market_ratio(receives: float, gives: float) -> float:
     return float(receives / gives)
 
 
-def acceptance_label(ratio: float) -> str:
+DEFAULT_ACCEPTANCE_CUTOFFS = {"likely": 1.0, "possible": 0.9}
+
+
+def acceptance_cutoffs(path: str | Path) -> dict:
+    """Load fitted trade-acceptance cutoffs when at least 20 outcomes are resolved."""
+    path = Path(path)
+    if not path.exists():
+        return {**DEFAULT_ACCEPTANCE_CUTOFFS, "resolved": 0, "calibrated": False}
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    resolved = [
+        row for row in rows
+        if row.get("outcome") in {"accepted", "rejected", "countered"}
+    ]
+    result = {
+        **DEFAULT_ACCEPTANCE_CUTOFFS,
+        "resolved": len(resolved),
+        "calibrated": False,
+    }
+    if len(resolved) < 20:
+        return result
+    labels = np.array([1 if row["outcome"] == "accepted" else 0 for row in resolved])
+    if np.unique(labels).size < 2:
+        result["reason"] = "resolved outcomes contain only one class"
+        return result
+    from sklearn.linear_model import LogisticRegression
+
+    ratios = np.array([[float(row["r"])] for row in resolved])
+    model = LogisticRegression(random_state=2026).fit(ratios, labels)
+    coefficient = float(model.coef_[0, 0])
+    intercept = float(model.intercept_[0])
+    if coefficient <= 0:
+        result["reason"] = "fitted acceptance slope is not positive"
+        return result
+
+    def ratio_at(probability: float) -> float:
+        logit = np.log(probability / (1.0 - probability))
+        return max(0.0, float((logit - intercept) / coefficient))
+
+    result.update({
+        "likely": ratio_at(0.50),
+        "possible": ratio_at(0.25),
+        "calibrated": True,
+        "coefficient": coefficient,
+        "intercept": intercept,
+    })
+    return result
+
+
+def acceptance_status(cutoffs: dict) -> str:
+    """Describe whether reports use guessed or outcome-calibrated thresholds."""
+    if cutoffs.get("calibrated"):
+        return (
+            f"Trade acceptance thresholds fitted on {cutoffs['resolved']} resolved offers: "
+            f"LIKELY r>={cutoffs['likely']:.3f}, POSSIBLE r>={cutoffs['possible']:.3f}."
+        )
+    reason = f" ({cutoffs['reason']})" if cutoffs.get("reason") else ""
+    return (
+        f"Trade acceptance thresholds remain defaults (LIKELY r>=1.000, "
+        f"POSSIBLE r>=0.900): {cutoffs.get('resolved', 0)}/20 resolved offers{reason}."
+    )
+
+
+def acceptance_label(ratio: float, cutoffs: dict | None = None) -> str:
     """Classify acceptance from the other team's market ratio."""
-    if ratio >= 1.0:
+    cutoffs = cutoffs or DEFAULT_ACCEPTANCE_CUTOFFS
+    if ratio >= cutoffs["likely"]:
         return "LIKELY"
-    if ratio >= 0.9:
+    if ratio >= cutoffs["possible"]:
         return "POSSIBLE"
     return "UNLIKELY"
 

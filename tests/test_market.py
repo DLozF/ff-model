@@ -2,7 +2,10 @@ from datetime import datetime
 
 import polars as pl
 
-from ffm.market import acceptance_label, load_market, market_ratio, package_value
+from ffm.market import (
+    acceptance_cutoffs, acceptance_label, acceptance_status, load_market,
+    market_ratio, package_value,
+)
 
 
 def test_henry_for_coker_and_monangai_is_unlikely():
@@ -38,3 +41,35 @@ def test_load_market_accepts_legacy_maybe_team_column(tmp_path):
     market = load_market(tmp_path, now)
 
     assert market.get_column("market_team").item() == "SEA"
+
+
+def test_acceptance_cutoffs_stay_default_below_twenty_resolved_rows(tmp_path):
+    path = tmp_path / "trade_log.csv"
+    path.write_text(
+        "date,my_team_gives,my_team_gets,partner,r,model_verdict,outcome\n"
+        "2026-10-20,A,B,Team 2,1.1,ACCEPT,accepted\n",
+        encoding="utf-8",
+    )
+
+    cutoffs = acceptance_cutoffs(path)
+
+    assert cutoffs["calibrated"] is False
+    assert cutoffs["resolved"] == 1
+    assert acceptance_label(0.95, cutoffs) == "POSSIBLE"
+    assert "1/20 resolved offers" in acceptance_status(cutoffs)
+
+
+def test_acceptance_cutoffs_fit_after_twenty_resolved_rows(tmp_path):
+    path = tmp_path / "trade_log.csv"
+    rows = ["date,my_team_gives,my_team_gets,partner,r,model_verdict,outcome"]
+    for index in range(10):
+        rows.append(f"2026-10-20,A,B,Team 2,{0.60 + index * 0.02:.2f},ACCEPT,rejected")
+    for index in range(10):
+        rows.append(f"2026-10-20,A,B,Team 2,{1.10 + index * 0.02:.2f},ACCEPT,accepted")
+    path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    cutoffs = acceptance_cutoffs(path)
+
+    assert cutoffs["calibrated"] is True
+    assert cutoffs["resolved"] == 20
+    assert cutoffs["likely"] > cutoffs["possible"]

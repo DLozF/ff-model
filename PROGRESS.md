@@ -113,3 +113,5 @@
 - T02: walk-forward ridge-per-position and blend built (`src/ffm/backtest_projection.py`, `src/ffm/own_projection.py`); 23,520 predictions cached. Adoption rejected (0/4 periods >=1% MAE gain); `projection_source` stays `sleeper`.
 - T02: `scripts/explain_week.py` produced six explainers (Nabers 2026 w4 + five random seeded picks); scorecard and bias-by-bucket saved to `reports/projection_scorecard.md`.
 - T02: leakage, scoring, and determinism tests added; suite passed with `scripts/check.sh`. Assumption: `data/yahoo_paste/history/` absent, so Yahoo Fan-Pts cross-check was skipped.
+- T03 A5 assumption: a `countered` offer counts as not accepted as proposed for the binary acceptance model. LIKELY uses fitted P(accepted)>=50% and POSSIBLE uses >=25% once 20 resolved offers exist; until then the original r=1.00/0.90 cutoffs remain active.
+- T03 A5: `data/trade_log.csv` initialized locally and ignored by git; `scripts/log_trade.py` appends offers. Current status is 0/20 resolved, so reports retain the default acceptance thresholds.

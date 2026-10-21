@@ -10,7 +10,9 @@ import polars as pl
 from ffm.config import load_config
 from ffm.finder import trade_candidates, waiver_candidates
 from ffm.market import (
+    acceptance_cutoffs,
     acceptance_label,
+    acceptance_status,
     healthy_market_fallers,
     load_market,
     market_ratio,
@@ -74,6 +76,7 @@ def main():
     ros = players.get_column("ros_points").to_numpy()
     player_values = players.get_column("market_value_final").to_numpy()
     value_sources = players.get_column("value_source").to_list()
+    cutoffs = acceptance_cutoffs(ROOT / "data/trade_log.csv")
     pending_overrides = [
         row for row in overrides if str(row.get("weeks", "")).upper() == "TBD"
     ]
@@ -106,7 +109,7 @@ def main():
             other_receives_value = package_value(player_values[list(give)])
             other_gives_value = package_value(player_values[list(get)])
             ratio = market_ratio(other_receives_value, other_gives_value)
-            if not ratio >= 0.9:
+            if not ratio >= cutoffs["possible"]:
                 continue
             market_pass += 1
             raw_my = [player for player in rosters[my_team] if player not in give] + list(get)
@@ -177,7 +180,7 @@ def main():
         stress_mine = paired_summary(stress_before, stress_after, my_team)
         stress_verdict = trade_verdict(stress_mine[criterion])
         fragility, fragility_reason = fragility_label(verdict, stress_verdict)
-        acceptance = acceptance_label(row["ratio"])
+        acceptance = acceptance_label(row["ratio"], cutoffs)
         if verdict == "ACCEPT":
             confirmed.append({
                 **row, "mine": mine, "other": other, "verdict": verdict,
@@ -233,7 +236,9 @@ def main():
         trade_lines.append("- None.")
     trade_lines.extend([
         "", "## Trade results", "",
-        f"Screened {candidate_count} trades; {market_pass} passed market r >= 0.90; "
+        acceptance_status(cutoffs), "",
+        f"Screened {candidate_count} trades; {market_pass} passed market "
+        f"r >= {cutoffs['possible']:.3f}; "
         f"{len(screened)} passed WELP; confirmed top {min(30, len(screened))}.",
         "", "Stress case: score spread ×1.25; QB availability thinned by one-seventh.",
         "", "| Rank | Partner | Give | Give source | Get | Get source | Other receives V | Other gives V | r | WELP gain | Verdict metric gain | Other model playoff delta | Verdict | Stress | Stability | Acceptance |",
