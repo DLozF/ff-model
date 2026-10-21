@@ -80,3 +80,19 @@ def test_context_features_are_pregame_team_shares_and_qb_change():
     assert week2.item(0, "home") == 1.0
     assert week2.item(0, "qb_change") == 1.0
     assert week2.item(0, "opponent_pos_allowed") > 0.0
+
+
+def test_build_features_can_emit_unplayed_target_without_using_target_actual():
+    frame = pl.DataFrame({
+        "season": [2026, 2026], "week": [6, 7], "sleeper_id": ["a", "a"],
+        "pos": ["WR", "WR"], "team": ["TB", "TB"], "opp": ["ATL", "CAR"],
+        "gsis_id": ["g-a", "g-a"], "act_pts": [12.0, 999.0],
+        "proj_pts": [10.0, 14.0], "played": [True, False],
+    })
+
+    features = build_features(frame, half_lives={"WR": 2.0}, include_unplayed=True)
+    target = features.filter(pl.col("week") == 7)
+
+    assert target.item(0, "last3") == 12.0
+    assert target.item(0, "season_avg") == 12.0
+    assert target.item(0, "played") is False

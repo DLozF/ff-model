@@ -26,6 +26,7 @@ from ffm.season import round_robin
 from ffm.sleeper import cache_players, cache_state, cache_week
 from ffm.worlds import load_injury_overrides
 from scripts.daily_snapshot import run_daily_snapshot
+from scripts.shadow_job import run_shadow
 
 POSITIONS = ("QB", "RB", "WR", "TE", "K", "DEF")
 LONG_TERM = {"IR", "PUP"}
@@ -325,6 +326,10 @@ def run_daily(root: Path, dry_run: bool = False, now: datetime | None = None) ->
     sleeper_players = pl.read_parquet(cache / "sleeper_players.parquet")
     schedules = pl.read_parquet(cache / "nflverse_schedules.parquet")
     completed = completed_weeks(schedules, season)
+    shadow = (
+        run_shadow(root, season, completed, now=now)
+        if not dry_run else {"created": False, "snapshot": None, "report": None}
+    )
     snapshots = root / "data/injury_snapshots"
     snapshots.mkdir(parents=True, exist_ok=True)
     current_snapshot = injury_snapshot(sleeper_players)
@@ -375,6 +380,7 @@ def run_daily(root: Path, dry_run: bool = False, now: datetime | None = None) ->
         f"- Completed regular-season weeks: {', '.join(map(str, completed)) or 'none'}",
         f"- Newly cached Sleeper stats: {', '.join(map(str, refresh['new_stats'])) or 'none'}",
         f"- {snapshot_note}",
+        f"- Shadow mode: {'created ' + shadow['snapshot'] if shadow['created'] else 'snapshot reused or not due'}.",
         "", "## Injury changes", "",
         *injury_sections(changes, league, players, my_team, opponent),
         "## Start/sit", "",

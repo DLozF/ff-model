@@ -38,29 +38,37 @@ def fit_half_life(frame: pl.DataFrame) -> dict[str, float]:
     return half_lives
 
 
-def build_features(frame: pl.DataFrame, half_lives: dict[str, float] | None = None) -> pl.DataFrame:
+def build_features(
+    frame: pl.DataFrame,
+    half_lives: dict[str, float] | None = None,
+    include_unplayed: bool = False,
+) -> pl.DataFrame:
     """Build EWMA, last-3, and season-average features using only prior games."""
-    frame = frame.filter(pl.col("played")).sort("season", "week")
+    frame = frame.sort("season", "week")
+    played = frame.filter(pl.col("played"))
     if half_lives is None:
-        half_lives = fit_half_life(frame.filter(pl.col("season") < 2023))
+        half_lives = fit_half_life(played.filter(pl.col("season") < 2023))
     rows = []
     for group in frame.partition_by("sleeper_id", as_dict=False):
-        points = group.get_column("act_pts").to_numpy()
-        positions = group.get_column("pos").to_list()
-        for index, row in enumerate(group.iter_rows(named=True)):
-            history = points[:index]
+        history = []
+        for row in group.iter_rows(named=True):
+            if not row["played"] and not include_unplayed:
+                continue
+            values = np.asarray(history, dtype=float)
             feature_row = {
                 "season": row["season"], "week": row["week"], "sleeper_id": row["sleeper_id"],
                 "pos": row["pos"], "team": row["team"], "proj_pts": row["proj_pts"],
-                "act_pts": row["act_pts"],
-                "last3": float(np.mean(history[-3:])) if history.size else 0.0,
-                "season_avg": float(np.mean(history)) if history.size else 0.0,
-                "ewma": ewma(history, half_lives.get(row["pos"], 3.0)),
+                "act_pts": row["act_pts"], "played": row["played"],
+                "last3": float(np.mean(values[-3:])) if values.size else 0.0,
+                "season_avg": float(np.mean(values)) if values.size else 0.0,
+                "ewma": ewma(values, half_lives.get(row["pos"], 3.0)),
             }
             for column in ("gsis_id", "opp", "name"):
                 if column in row:
                     feature_row[column] = row[column]
             rows.append(feature_row)
+            if row["played"]:
+                history.append(float(row["act_pts"]))
     return pl.DataFrame(rows)
 
 
@@ -84,9 +92,12 @@ def build_context_features(
     mapping: pl.DataFrame,
     schedules: pl.DataFrame,
     half_lives: dict[str, float] | None = None,
+    include_unplayed: bool = False,
 ) -> pl.DataFrame:
     """Add strictly pregame role, Vegas, opponent, and QB-continuity features."""
-    base = build_features(frame, half_lives=half_lives).sort("season", "week", "sleeper_id")
+    base = build_features(
+        frame, half_lives=half_lives, include_unplayed=include_unplayed
+    ).sort("season", "week", "sleeper_id")
     if "season_type" in stats.columns:
         stats = stats.filter(pl.col("season_type") == "REG")
     stats = stats.with_columns(pl.col("team").map_elements(normalize_team, return_dtype=pl.String))
@@ -137,7 +148,7 @@ def build_context_features(
     }
 
     allowed_week = (
-        base.group_by("season", "week", "opp", "pos")
+        base.filter(pl.col("played")).group_by("season", "week", "opp", "pos")
         .agg(pl.col("act_pts").sum().alias("points"))
     )
     allowed_by_opponent: dict[tuple[int, str, str], list[tuple[int, float]]] = {}

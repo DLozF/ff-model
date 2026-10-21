@@ -25,6 +25,7 @@
 | T04-5 | done | Expected bonuses reduced bias in 5/6 positions but failed MAE gates; rejected |
 | T04-6 | done | Expanded ridge improved Spearman/RMSE but worsened MAE in all periods; rejected |
 | T04-7 | blocked | Full-paste importer is implemented; real league rebuild awaits roster, standings, and schedule pastes |
+| Shadow | done | Week-7 immutable three-candidate snapshot saved before kickoff; weeks 7-12 rule frozen |
 
 ## Assumptions
 - Synthetic league uses the exact VERIFY defaults in PLAN.md until Yahoo is connected.
@@ -138,3 +139,5 @@
 - T04 Item 6: added past-only snap/target/carry shares, Vegas context, shrunk opponent points allowed, home/away, and QB-change features to standardized per-position ridge. MAE worsened 1.015%/1.092%/1.226%/1.802% for 2023-2026 despite better Spearman and RMSE, so the standard gate failed and HGB was not run. `projection_source` remains `sleeper`.
 - T04 Item 7: Yahoo API is not configured, so full-paste support was added. Raw team pages, standings, and remaining-week schedules now parse into normalized Yahoo tables; more than three player mismatches abort before writes; real-league simulations seed current standings and use the pasted schedule; P6/P8/waiver reports label real-league output. Activation and reruns were not possible because only settings, my team, and my roster are currently pasted.
 - T04 final: summary written to `reports/task04_summary.md`; all implemented items pass 142 tests and the reproducibility check. Item 7 activation remains the only Task 04 blocker and requires Diego's missing league paste files.
+- Shadow mode: preregistered 2026 weeks 7-12 and the fixed 4-of-6 Spearman plus 0.5%-CRPS guard. The daily job now writes immutable pregame Sleeper, DEF-stop-only, and expanded-ridge points with separately refit candidate quantiles, then scores completed weeks by position and cumulative sample-weighted CRPS without changing the default projection.
+- Shadow week 7: `data/shadow/2026_w7.parquet` contains 1,086 rows (362 per candidate), 199 quantiles per row, and candidate training cutoffs no later than 2026 week 6. It was saved at 2026-10-21 22:13:26 UTC before the 2026-10-23 00:15 UTC kickoff; a second live daily run reused it unchanged. Final checks: 152 tests passed and reproducibility passed.

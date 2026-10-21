@@ -14,3 +14,4 @@
 - A known omitted scoring component can reduce mean bias while worsening MAE; require every preregistered accuracy gate before adopting a bias correction.
 - Richer pregame features can improve rank correlation and RMSE while worsening MAE; evaluate the exact deployment loss and stop when its preregistered gate fails.
 - A full pasted league must be parsed and matched completely before changing config or caches; use standings team names as the canonical roster and schedule keys.
+- Forward-test snapshots are immutable evidence: use the exact requested path and restore their saved pregame points in later walk-forward fits instead of rebuilding those weeks from mutable projection caches.
