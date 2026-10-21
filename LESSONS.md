@@ -11,3 +11,4 @@
 - Drop protection can legitimately leave fewer than 10 waiver recommendations; never backfill the report with protected or duplicate drops.
 - Validate every imported table before the first write; transactional config safety is impossible once partial parsing has already mutated state.
 - Share denominators are team-game quantities: use nflverse `offense_pct` directly and count team pass attempts once per week, not once per player row.
+- A known omitted scoring component can reduce mean bias while worsening MAE; require every preregistered accuracy gate before adopting a bias correction.

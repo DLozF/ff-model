@@ -111,3 +111,14 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Metric: QB CRPS is the adoption metric; 50%, 80%, and 95% coverage are diagnostics.
 - Test periods and threshold: use the standard four periods (2023, 2024, 2025, completed 2026); adopt only with at least 1% CRPS improvement in at least 3 of 4 periods and no period worse by more than 1%.
 - Current decision: deferred. The 2026 season has fewer than eight completed weeks, so no parameter change is allowed yet.
+
+## T04-5 Expected league bonuses — preregistered
+
+- Hypothesis: adding past-only expected milestone, 40+ yard play, long-TD, and defensive fourth-down-stop bonuses removes the known downward projection bias and improves accuracy.
+- Exact change: for each test player-week, estimate yardage-threshold probabilities from nearest-projection empirical yardage residuals fit only on earlier weeks; compute both highest-tier and stacked milestone expectations and use `scoring.milestone_mode`. Estimate 40+ play rates per projected yard by position with shrinkage to the historical position mean, estimate long-TD shares from prior touchdowns, and estimate DEF fourth-down stops from the opponent's prior attempt rate times the defense's prior stop rate with league-mean shrinkage. Add the result to `rescored_proj` as `proj_pts_bonus`.
+- Adoption metrics: MAE and within-week Spearman by period. Diagnostics: mean bias by position and projection bucket, and sample-weighted CRPS after refitting the quantile tables on the matching projection.
+- Test periods: 2023, 2024, 2025, and completed 2026 weeks. Every week-W estimate uses rows and play-by-play strictly before week W.
+- Task-specific adoption threshold: adopt if MAE is not worse than baseline by more than 0.5% in any period, mean bias moves closer to zero in at least 5 of 6 positions, and Spearman is not worse in any period.
+- Standard-rule diagnostic: also report whether MAE improves by at least 1% in at least 3 of 4 periods with no period worse by more than 1%.
+- Config change only if adopted: set `projection_source: sleeper_bonus`, refit quantiles, rerun calibration and P6 worlds, and report coverage, CRPS, and league odds before/after. Otherwise leave the model and config unchanged.
+- Result: rejected. MAE changes were -0.036% (2023), +0.020% (2024), -0.792% (2025), and -0.838% (2026), so 2025 and 2026 exceeded the task-specific 0.5% worsening cap. Spearman improved in all four periods and mean bias moved closer to zero in 5/6 positions, but every adoption condition was required. The standard 1% rule also failed (0/4 periods improved by at least 1%). Sample-weighted CRPS changed 3.3049->3.3055, 3.2726->3.2699, 3.2420->3.2429, and 3.2993->3.3003. `projection_source` remains unchanged; calibration and P6 were not rerun. Full bias and coverage tables: `reports/expected_bonus.md`.
