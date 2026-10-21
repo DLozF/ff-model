@@ -49,6 +49,7 @@ def load_market(cache: str | Path, now: datetime | None = None) -> pl.DataFrame:
         pl.col("player_sleeperId").cast(pl.String).alias("sleeper_id"),
         pl.col("player_name").alias("market_name"),
         pl.col("player_position").alias("market_position"),
+        pl.col("player_team").alias("market_team"),
         pl.col("redraftValue").cast(pl.Float64).alias("market_value"),
         pl.col("trend30Day").cast(pl.Float64).alias("trend_30_day"),
         pl.col("overallRank").cast(pl.Int64).alias("market_overall_rank"),

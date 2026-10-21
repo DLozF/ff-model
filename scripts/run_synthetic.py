@@ -9,7 +9,8 @@ from ffm.config import load_config
 from ffm.distributions import QuantileModel
 from ffm.ids import normalize_team
 from ffm.league import partial_synthetic_league
-from ffm.market import join_market, load_market, write_model_vs_market
+from ffm.market import load_market, write_model_vs_market
+from ffm.market_fallback import apply_model_fallback
 from ffm.scoring import score_projection_frame
 from ffm.season import roster_team_scores, simulate_team_scores
 from ffm.worlds import (
@@ -152,7 +153,10 @@ def main():
     sleeper_players = pl.read_parquet(CACHE / "sleeper_players.parquet")
     players, projections = prepare_players(history, weeks, sleeper_players, real_roster_ids)
     market = load_market(CACHE)
-    players = join_market(players, market, "player_id", ROOT / "logs/fantasycalc_unmatched.log")
+    players = apply_model_fallback(
+        players, market, sleeper_players,
+        lineup=config["league"]["lineup"], overrides=load_injury_overrides(ROOT / "overrides.yaml"),
+    )
     write_model_vs_market(players, market, ROOT / "reports/model_vs_market.md")
     bye, games = schedule_inputs(schedules, weeks, players)
     positions = players.get_column("position").to_numpy()
