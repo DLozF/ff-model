@@ -342,7 +342,11 @@ def run_daily(root: Path, dry_run: bool = False, now: datetime | None = None) ->
     coverage = weekly_position_coverage(
         pl.read_parquet(cache / "player_weeks.parquet"), quantile_model, season
     )
-    run_daily_snapshot(root, now)
+    if int(manifest["first_week"]) in completed:
+        snapshot_note = "Forward snapshot deferred until P6 worlds are rebuilt."
+    else:
+        run_daily_snapshot(root, now)
+        snapshot_note = "Forward snapshot saved."
     write_needs_review(
         root / "reports/injuries/needs_review.md", sleeper_players, league,
         players, my_team, override_names,
@@ -354,6 +358,7 @@ def run_daily(root: Path, dry_run: bool = False, now: datetime | None = None) ->
         f"- Current model week: {manifest['first_week']}",
         f"- Completed regular-season weeks: {', '.join(map(str, completed)) or 'none'}",
         f"- Newly cached Sleeper stats: {', '.join(map(str, refresh['new_stats'])) or 'none'}",
+        f"- {snapshot_note}",
         "", "## Injury changes", "",
         *injury_sections(changes, league, players, my_team, opponent),
         "## Start/sit", "",

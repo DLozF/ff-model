@@ -1,3 +1,4 @@
+import argparse
 import json
 import time
 from datetime import datetime
@@ -9,6 +10,7 @@ import polars as pl
 
 from ffm.config import load_config
 from ffm.finder import trade_candidates, waiver_candidates
+from ffm.lineup import greedy
 from ffm.market import (
     acceptance_cutoffs,
     acceptance_label,
@@ -49,11 +51,60 @@ def eligible_waiver_candidates(adds, roster, protected):
     return [(drop, add) for add in adds for drop in roster if drop not in protected]
 
 
+def bye_coverage_gaps(projections, positions, roster, lineup):
+    """Count remaining team-weeks with fewer active players than base positional slots."""
+    gaps = 0
+    roster = np.asarray(roster, dtype=int)
+    for week in range(projections.shape[0]):
+        active = projections[week, roster] > 0
+        for position in ("QB", "RB", "WR", "TE", "K", "DEF"):
+            need = int(lineup.get(position, 0))
+            have = int(np.sum((positions[roster] == position) & active))
+            gaps += max(0, need - have)
+    return gaps
+
+
+def enters_next_week_lineup(projections, available, positions, roster, player):
+    """Return whether a player starts in the mean next-week optimal lineup."""
+    roster = np.asarray(roster, dtype=int)
+    mean_projection = projections[0].mean(axis=0)[roster]
+    mean_available = available[0].mean(axis=0)[roster] > 0.5
+    selected = greedy(mean_projection, positions[roster], mean_available)
+    return bool(selected[np.flatnonzero(roster == player)[0]])
+
+
+def interval95_text(summary):
+    """Format a paired mean and normal 95% interval."""
+    low = summary["mean"] - 1.96 * summary["se"]
+    high = summary["mean"] + 1.96 * summary["se"]
+    return f"{summary['mean']:+.4f} [{low:+.4f}, {high:+.4f}]"
+
+
+def availability_warning(root, partial_import, today):
+    """Return the Yahoo availability warning required in partial-import mode."""
+    if not partial_import:
+        return ""
+    path = root / "data/yahoo_paste/available.txt"
+    if path.exists():
+        age_days = (today - datetime.fromtimestamp(
+            path.stat().st_mtime, tz=ZoneInfo("America/Chicago")
+        ).date()).days
+        if age_days <= 7:
+            return ""
+    return "confirm the player is available on Yahoo before claiming"
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--waivers-only", action="store_true")
+    args = parser.parse_args()
     started = time.perf_counter()
     config = load_config()
     today = datetime.now(ZoneInfo("America/Chicago")).date()
-    trade_enabled = trades_open(config["league"]["trade_deadline"], today)
+    trade_enabled = (
+        trades_open(config["league"]["trade_deadline"], today)
+        and not args.waivers_only
+    )
     world_dir = load_world_directory(ROOT / "models/world_manifest.json")
     points = np.load(world_dir / "points.npy", mmap_mode="r")
     available = np.load(world_dir / "available.npy", mmap_mode="r")
@@ -98,6 +149,10 @@ def main():
         return cache[key]
 
     baseline = [welp(roster) for roster in rosters]
+    mean_week_projection = projections.mean(axis=1)
+    base_bye_gaps = bye_coverage_gaps(
+        mean_week_projection, positions, rosters[my_team], config["league"]["lineup"]
+    )
     screened = []
     candidate_count = 0
     market_pass = 0
@@ -215,9 +270,29 @@ def main():
             config["league"]["playoff_teams"], config["league"]["playoff_reseeding"],
         )
         mine = paired_summary(before, after, my_team)
+        after_bye_gaps = bye_coverage_gaps(
+            mean_week_projection, positions, updated_roster, config["league"]["lineup"]
+        )
+        starts = enters_next_week_lineup(
+            projections, available, positions, updated_roster, add
+        )
+        playoff_low = mine["playoffs"]["mean"] - 1.96 * mine["playoffs"]["se"]
+        if config["league"]["waiver_type"] == "FAAB":
+            bid = min(100, max(1, round(100 * mine["playoffs"]["mean"] / 0.10)))
+            waiver_advice = f"bid about {bid}% of remaining FAAB"
+        else:
+            waiver_advice = (
+                "worth using priority" if playoff_low > 0 else "do not use priority"
+            )
         waiver_results.append({
             "gain": gain, "drop": drop, "add": add, "mine": mine,
             "verdict": trade_verdict(mine[criterion]),
+            "next_projection": float(mean_week_projection[0, add]),
+            "ros_points": float(ros[add]),
+            "bye_before": base_bye_gaps,
+            "bye_after": after_bye_gaps,
+            "role": "starting" if starts else "depth",
+            "waiver_advice": waiver_advice,
         })
 
     date = today.isoformat()
@@ -278,18 +353,25 @@ def main():
     waiver_lines.extend([
         "", "## Waiver results", "",
         f"Screened {len(top_free_agents) * len(rosters[my_team])} add/drop pairs; confirmed top {min(10, len(waiver_screen))}.",
-        "", "| Rank | Add | Add source | Drop | Drop source | Add V | Drop V | WELP gain | Verdict metric gain | Verdict |",
-        "|---:|---|---|---|---|---:|---:|---:|---:|---|",
+        "", "| Rank | Add | Source | Drop | Source | Add V | Drop V | Playoff gain (95% CI) | Title gain (95% CI) | Next week | ROS | Bye gaps | Role | Waiver advice | Availability |",
+        "|---:|---|---|---|---|---:|---:|---|---|---:|---:|---|---|---|---|",
     ])
+    availability_note = availability_warning(
+        ROOT, config["league"].get("partial_import", False), today
+    )
     for rank, row in enumerate(waiver_results, 1):
         waiver_lines.append(
             f"| {rank} | {names[row['add']]} | {value_sources[row['add']]} | "
             f"{names[row['drop']]} | {value_sources[row['drop']]} | "
-            f"{player_values[row['add']]:.1f} | {player_values[row['drop']]:.1f} | {row['gain']:+.2f} | "
-            f"{row['mine'][criterion]['mean']:+.4f} | {row['verdict']} |"
+            f"{player_values[row['add']]:.1f} | {player_values[row['drop']]:.1f} | "
+            f"{interval95_text(row['mine']['playoffs'])} | "
+            f"{interval95_text(row['mine']['champion'])} | "
+            f"{row['next_projection']:.2f} | {row['ros_points']:.2f} | "
+            f"{row['bye_before']}→{row['bye_after']} | {row['role']} | "
+            f"{row['waiver_advice']} | {availability_note or 'confirmed from recent Yahoo list'} |"
         )
     if not waiver_results:
-        waiver_lines.append("| - | - | - | - | - | - | - | - | - | No positive WELP moves |")
+        waiver_lines.append("| - | - | - | - | - | - | - | - | - | - | - | - | - | - | No positive WELP moves |")
     (ROOT / "reports" / f"waivers_{date}.md").write_text("\n".join(waiver_lines) + "\n", encoding="utf-8")
     runtime = time.perf_counter() - started
     print(f"trade_candidates: {candidate_count}")
