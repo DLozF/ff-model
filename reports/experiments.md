@@ -102,3 +102,12 @@ Adoption rule for E4-E10: improve the stated metric by at least 1% in at least 3
 - Test periods: 2023, 2024, 2025, and completed 2026 weeks.
 - Adoption threshold: recalibration is evaluated on stacked Brier with >=1% improvement in 3 of 4 periods and no period worse by >1%, if the new test still fails.
 - Result: stacked calibration still fails. The fixed 5% worst-bin result is 6.512% (bin 1, n=360, predicted 0.343 vs actual 0.278). The Wilson 95% interval for that bin is [0.234, 0.326], which excludes the predicted 0.343, so the miscalibration is not explained by sample size. Stacked ECE is 0.0234 with a 95% interval [0.0003, 0.0234]. Overall has one smaller Wilson failure in bin 9 (predicted 0.796 vs actual 0.822, interval [0.801, 0.840]) and ECE 0.008. Bin table: `logs/task03-calibration-bins.csv`. Isotonic recalibration was not attempted because Brier improvement is judged under the standard adoption rule and the stacked gate's failure is real, not a noise artifact.
+
+## T03-A4 QB 2026 undercoverage follow-up — preregistered
+
+- Trigger: rerun E5 for QB only once the 2026 season has at least eight completed regular-season weeks; do not adjust the distribution before that trigger.
+- Hypothesis: eight or more completed weeks provide enough recent data to judge whether rolling QB bias and spread correct the current 80% interval undercoverage.
+- Exact change: fit the existing E5 eight-week rolling QB bias and residual scale using only weeks strictly before each tested week, with prior weight 200; compare against the unchanged base QB quantiles.
+- Metric: QB CRPS is the adoption metric; 50%, 80%, and 95% coverage are diagnostics.
+- Test periods and threshold: use the standard four periods (2023, 2024, 2025, completed 2026); adopt only with at least 1% CRPS improvement in at least 3 of 4 periods and no period worse by more than 1%.
+- Current decision: deferred. The 2026 season has fewer than eight completed weeks, so no parameter change is allowed yet.
